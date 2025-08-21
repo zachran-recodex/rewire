@@ -26,10 +26,7 @@
       "mcp__laravel-boost__database-schema"
     ],
     "deny": [],
-    "ask": [],
-    "additionalDirectories": [
-      "C:\\c\\Users\\zachr\\PhpstormProjects"
-    ]
+    "ask": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [

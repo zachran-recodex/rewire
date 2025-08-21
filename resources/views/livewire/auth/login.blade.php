@@ -29,6 +29,27 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
+        // Check if user exists and credentials are correct
+        $user = \App\Models\User::where('username', $this->username)->first();
+        
+        if (! $user || ! \Illuminate\Support\Facades\Hash::check($this->password, $user->password)) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'username' => __('auth.failed'),
+            ]);
+        }
+        
+        // Check if user account is active
+        if (! $user->is_active) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'username' => 'Your account has been deactivated by an administrator. Please contact support for assistance.',
+            ]);
+        }
+        
+        // Proceed with normal authentication
         if (! Auth::attempt(['username' => $this->username, 'password' => $this->password], $this->remember)) {
             RateLimiter::hit($this->throttleKey());
 
