@@ -35,6 +35,7 @@ class UserFactory extends Factory
             'birth_date' => fake()->date(),
             'location' => fake()->city(),
             'website' => fake()->url(),
+            'is_active' => true,
             'remember_token' => Str::random(10),
         ];
     }

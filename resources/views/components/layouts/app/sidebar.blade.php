@@ -2,6 +2,8 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
         @include('partials.head')
+
+        <title>{{ $title ?? config('app.name') }}</title>
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
@@ -15,9 +17,20 @@
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                 </flux:navlist.group>
+
+                @role('super-admin|admin')
+                    <flux:navlist.group :heading="__('Administrator')" class="grid">
+                        <flux:navlist.item icon="users" :href="route('administrator.manage-users')" :current="request()->routeIs('administrator.manage-users')" wire:navigate>{{ __('Manage Users') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                @endrole
             </flux:navlist>
 
             <flux:spacer />
+
+            <flux:radio.group x-data variant="segmented" x-model="$flux.appearance">
+                <flux:radio value="light" icon="sun">{{ __('Light') }}</flux:radio>
+                <flux:radio value="dark" icon="moon">{{ __('Dark') }}</flux:radio>
+            </flux:radio.group>
 
             <flux:navlist variant="outline">
                 <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
@@ -50,8 +63,8 @@
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 @if(auth()->user()->avatar)
-                                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}" 
-                                         alt="{{ auth()->user()->name }}" 
+                                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}"
+                                         alt="{{ auth()->user()->name }}"
                                          class="h-8 w-8 rounded-lg object-cover" />
                                 @else
                                     <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">
@@ -91,7 +104,7 @@
 
         <!-- Mobile User Menu -->
         <flux:header class="lg:hidden">
-            <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+            <flux:sidebar.toggle class="lg:hidden" icon="panel-left" inset="left" />
 
             <flux:spacer />
 
@@ -113,8 +126,8 @@
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 @if(auth()->user()->avatar)
-                                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}" 
-                                         alt="{{ auth()->user()->name }}" 
+                                    <img src="{{ \Illuminate\Support\Facades\Storage::url(auth()->user()->avatar) }}"
+                                         alt="{{ auth()->user()->name }}"
                                          class="h-8 w-8 rounded-lg object-cover" />
                                 @else
                                     <span class="relative flex h-8 w-8 shrink-0 overflow-hidden rounded-lg">

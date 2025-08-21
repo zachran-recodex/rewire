@@ -17,9 +17,9 @@ class RolesSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create roles
-        Role::create(['name' => 'Super Admin']);
-        Role::create(['name' => 'Admin']);
-        Role::create(['name' => 'User']);
+        Role::create(['name' => 'super-admin']);
+        Role::create(['name' => 'admin']);
+        Role::create(['name' => 'user']);
 
         // Reset cache again after creating roles
         app()[PermissionRegistrar::class]->forgetCachedPermissions();

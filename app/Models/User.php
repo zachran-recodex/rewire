@@ -31,6 +31,7 @@ class User extends Authenticatable
         'birth_date',
         'location',
         'website',
+        'is_active',
     ];
 
     /**
@@ -54,6 +55,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'birth_date' => 'date',
+            'is_active' => 'boolean',
         ];
     }
 

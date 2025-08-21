@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Administrator\ManageUsers;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -17,6 +18,11 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
+
+    // Administrator routes
+    Route::middleware(['role:super-admin|admin'])->prefix('administrator')->name('administrator.')->group(function () {
+        Route::get('manage-users', ManageUsers::class)->name('manage-users');
+    });
 });
 
 require __DIR__.'/auth.php';

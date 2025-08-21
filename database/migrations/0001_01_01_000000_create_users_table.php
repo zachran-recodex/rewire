@@ -24,6 +24,7 @@ return new class extends Migration
             $table->date('birth_date')->nullable();
             $table->string('location')->nullable();
             $table->string('website')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

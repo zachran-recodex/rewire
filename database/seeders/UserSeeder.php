@@ -21,8 +21,9 @@ class UserSeeder extends Seeder
             'password' => Hash::make('admin123'),
             'bio' => 'Super Administrator of Rewire',
             'location' => 'Indonesia',
+            'is_active' => true,
         ]);
-        $superAdmin->assignRole('Super Admin');
+        $superAdmin->assignRole('super-admin');
 
         // Create Admin user
         $admin = User::create([
@@ -31,8 +32,9 @@ class UserSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => Hash::make('password'),
             'bio' => 'Administrator account',
+            'is_active' => true,
         ]);
-        $admin->assignRole('Admin');
+        $admin->assignRole('admin');
 
         // Create regular User
         $user = User::create([
@@ -41,7 +43,8 @@ class UserSeeder extends Seeder
             'email' => 'user@example.com',
             'password' => Hash::make('password'),
             'bio' => 'Regular user account',
+            'is_active' => true,
         ]);
-        $user->assignRole('User');
+        $user->assignRole('user');
     }
 }
