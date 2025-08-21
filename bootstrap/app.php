@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'active' => EnsureUserIsActive::class,
         ]);
-        
+
         // Apply to all authenticated routes
         $middleware->appendToGroup('web', [
             EnsureUserIsActive::class,

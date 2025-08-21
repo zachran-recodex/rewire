@@ -75,15 +75,15 @@ class ManageUsers extends Component
 
         $rules = [
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username,' . $userId,
-            'email' => 'required|email|unique:users,email,' . $userId,
+            'username' => 'required|string|max:255|unique:users,username,'.$userId,
+            'email' => 'required|email|unique:users,email,'.$userId,
             'password' => 'nullable|string|min:8',
             'role_id' => 'required|exists:roles,id',
             'is_active' => 'boolean',
         ];
 
         $this->validate(array_combine(
-            array_map(fn($key) => "editForm.{$userId}.{$key}", array_keys($rules)),
+            array_map(fn ($key) => "editForm.{$userId}.{$key}", array_keys($rules)),
             $rules
         ));
 
@@ -94,7 +94,7 @@ class ManageUsers extends Component
             'is_active' => $formData['is_active'] ?? false,
         ];
 
-        if (!empty($formData['password'])) {
+        if (! empty($formData['password'])) {
             $updateData['password'] = Hash::make($formData['password']);
         }
 
@@ -103,7 +103,7 @@ class ManageUsers extends Component
         $role = Role::find($formData['role_id']);
         $user->syncRoles($role);
 
-        $this->modal('edit-' . $userId)->close();
+        $this->modal('edit-'.$userId)->close();
         session()->flash('message', 'User updated successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
@@ -111,7 +111,7 @@ class ManageUsers extends Component
     public function deleteUser(User $user): void
     {
         $user->delete();
-        $this->modal('delete-' . $user->id)->close();
+        $this->modal('delete-'.$user->id)->close();
         session()->flash('message', 'User deleted successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
@@ -146,7 +146,7 @@ class ManageUsers extends Component
         $roles = Role::where('name', '!=', 'super-admin')->get();
 
         foreach ($users as $user) {
-            if (!isset($this->editForm[$user->id])) {
+            if (! isset($this->editForm[$user->id])) {
                 $this->editForm[$user->id] = [
                     'name' => $user->name,
                     'username' => $user->username,

@@ -137,16 +137,15 @@ new class extends Component {
                     <!-- Preview New Avatar -->
                     @if ($avatar)
                         <div class="flex flex-col items-center space-y-2">
-                            <flux:text class="text-sm font-medium text-gray-700 dark:text-gray-300">Preview:</flux:text>
+                            <flux:label>Preview:</flux:text>
                             <img
                                 src="{{ $avatar->temporaryUrl() }}"
                                 alt="Avatar Preview"
                                 class="size-16 rounded-xl object-cover"
                             />
-                            <div class="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 flex items-center space-x-2">
-                                <flux:icon name="camera" variant="mini" class="text-blue-600 dark:text-blue-300" />
-                                <span class="text-sm text-blue-600 dark:text-blue-300 font-medium">New image selected</span>
-                            </div>
+                            <flux:badge color="blue" icon="camera" variant="pill">
+                                New image selected
+                            </flux:badge>
                         </div>
                     @endif
                 </div>
@@ -167,11 +166,8 @@ new class extends Component {
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <flux:input wire:model="name" :label="__('Full Name')" type="text" required autofocus autocomplete="name" />
-                <flux:input wire:model="username" :label="__('Username')" type="text" readonly disabled class="bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed" />
+                <flux:input wire:model="username" :label="__('Username')" type="text" readonly disabled />
             </div>
-            <flux:text class="text-sm">
-                Username cannot be changed for security reasons.
-            </flux:text>
 
             <div>
                 <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
@@ -206,7 +202,7 @@ new class extends Component {
 
             <div>
                 <flux:textarea wire:model="bio" :label="__('Bio')" rows="4" placeholder="Tell us about yourself..." />
-                <flux:text class="mt-1 text-sm text-gray-500">
+                <flux:text class="mt-1 text-sm">
                     Maximum 1000 characters
                 </flux:text>
             </div>

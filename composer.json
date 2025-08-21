@@ -1,11 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "rewire/laravel-livewire-template",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "Rewire is a modern open-source Laravel + Livewire template. It provides a clean starting point with authentication, role-based access, UI components, and a developer-friendly workflow.",
     "keywords": [
         "laravel",
-        "framework"
+        "livewire",
+        "template",
+        "starter",
+        "rewire"
     ],
     "license": "MIT",
     "require": {

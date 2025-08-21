@@ -1,3 +1,104 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**Rewire** is a modern Laravel starter template that demonstrates best practices for building interactive web applications with Livewire, Flux UI, and AI-enhanced development workflows. This is a production-ready foundation for user management systems with authentication, role-based access control, and a beautiful interface.
+
+## Key Architecture
+
+### Tech Stack
+- **Laravel 12.x** with modern PHP 8.2+ features 
+- **Livewire 3.x** for full-stack reactive components
+- **Livewire Volt 1.7.x** for single-file components
+- **Flux UI 2.x** (free edition) for UI components
+- **Tailwind CSS 4.x** with modern utilities
+- **Pest 3.x** for testing
+- **Spatie Laravel Permission** for RBAC
+- **SQLite** for development database
+
+### Application Structure
+- **Authentication System**: Complete with registration, login, password reset, email verification
+- **Role-Based Access Control**: Super-admin, admin, and user roles with middleware protection
+- **User Management**: Full profile management with avatar uploads, settings, and account deletion
+- **Admin Panel**: User management interface for administrators
+- **Settings System**: Appearance, profile, and password management
+
+## Development Commands
+
+### Quick Development Start
+```bash
+composer run dev  # Runs Laravel server + queue worker + Vite dev server concurrently
+```
+
+### Testing
+```bash
+php artisan test                                    # Run all tests
+php artisan test tests/Feature/Auth/LoginTest.php   # Run specific test file
+php artisan test --filter=authentication           # Filter tests by name
+composer test                                       # Run tests with coverage
+```
+
+### Code Quality
+```bash
+vendor/bin/pint --dirty    # Format only modified files
+vendor/bin/pint           # Format all files
+```
+
+### Asset Building
+```bash
+npm run dev    # Development server with hot reload
+npm run build  # Production build
+```
+
+## Important Patterns
+
+### Component Architecture
+- **Volt Components**: Used for settings pages (`resources/views/livewire/settings/`) with single-file PHP + Blade
+- **Class-based Livewire**: Used for complex components like `ManageUsers` with separate PHP class files
+- **Flux UI**: Primary component library - use `flux:button`, `flux:input`, `flux:modal`, etc.
+
+### Authentication Flow
+- Routes in `routes/auth.php` and `routes/web.php`
+- Middleware: `auth`, `verified`, `role:super-admin|admin`, `active` (custom)
+- Settings pages use Volt components with proper validation and file uploads
+
+### Database Patterns
+- **Models**: Use constructor property promotion, explicit return types, `casts()` method
+- **Relationships**: Proper Eloquent relationships with eager loading
+- **Migrations**: Located in `database/migrations/` with comprehensive user table structure
+- **Seeders**: `RolesSeeder` and `UserSeeder` for initial data
+
+### Testing Structure
+- **Feature Tests**: Primary testing approach for user flows
+- **Pest Framework**: All tests use Pest syntax with `it()` and `expect()`
+- **Test Structure**: `tests/Feature/Auth/`, `tests/Feature/Settings/`, `tests/Unit/`
+- **Factories**: Use `User::factory()->create()` in tests
+
+### File Organization
+- **Livewire Components**: `app/Livewire/` for PHP classes, `resources/views/livewire/` for templates
+- **Custom Middleware**: `app/Http/Middleware/EnsureUserIsActive.php`
+- **Layouts**: Main app layout with sidebar navigation
+- **Icons**: Custom Flux icons in `resources/views/flux/icon/`
+
+## Laravel 12 Specific Notes
+- **No Kernel.php**: Middleware registration in `bootstrap/app.php`
+- **Streamlined Structure**: Service providers in `bootstrap/providers.php`
+- **Modern Routing**: Health check endpoint at `/up`
+- **Auto-discovery**: Console commands auto-register from `app/Console/Commands/`
+
+## MCP Integration
+- **Laravel Boost MCP Server**: Configured in `.mcp.json` with `php artisan boost:mcp`
+- **Available Tools**: Database queries, documentation search, tinker, browser logs
+- **Search Documentation**: Use Laravel Boost's `search-docs` tool before other approaches
+
+## Key Business Logic
+- **User Activation**: Custom middleware ensures only active users can access authenticated routes
+- **Role Management**: Three-tier system (super-admin, admin, user) with Spatie Permission
+- **Profile Management**: Avatar uploads with automatic cleanup, comprehensive user data
+- **Settings Pages**: Separate Volt components for profile, password, and appearance management
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
