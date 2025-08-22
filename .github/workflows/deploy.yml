@@ -66,6 +66,7 @@ jobs:
             
             # Run Laravel optimizations
             php artisan migrate --force
+            php artisan db:seed --force --class=RolesSeeder
             php artisan optimize
             php artisan queue:restart
             

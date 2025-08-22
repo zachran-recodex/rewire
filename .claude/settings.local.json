@@ -23,7 +23,12 @@
       "mcp__laravel-boost__search-docs",
       "mcp__ide__getDiagnostics",
       "mcp__laravel-boost__browser-logs",
-      "mcp__laravel-boost__database-schema"
+      "mcp__laravel-boost__database-schema",
+      "Bash(npm run build:*)",
+      "Bash(composer validate:*)",
+      "Bash(composer update:*)",
+      "Bash(vendor/bin/pest:*)",
+      "Bash(composer install:*)"
     ],
     "deny": [],
     "ask": []
