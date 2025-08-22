@@ -8,10 +8,12 @@ on:
     branches:
       - develop
       - main
+      - deploy
   pull_request:
     branches:
       - develop
       - main
+      - deploy
 
 jobs:
   ci:

@@ -6,7 +6,7 @@ on:
     types:
       - completed
     branches:
-      - main
+      - deploy
 
 jobs:
   deploy:
@@ -55,7 +55,7 @@ jobs:
             cp .env .env.backup
             
             # Pull latest changes
-            git pull origin main
+            git pull origin deploy
             
             # Install dependencies
             composer install --optimize-autoloader --no-dev --no-interaction
