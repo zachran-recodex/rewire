@@ -1,7 +1,10 @@
 name: tests
 
 on:
-  push:
+  workflow_run:
+    workflows: ["linter"]
+    types:
+      - completed
     branches:
       - develop
       - main
@@ -13,6 +16,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
     environment: Testing
 
     steps:

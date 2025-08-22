@@ -1,0 +1,86 @@
+name: deploy
+
+on:
+  workflow_run:
+    workflows: ["tests"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Add Flux Credentials
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+
+      - name: Install Dependencies
+        run: |
+          composer install --optimize-autoloader --no-dev --no-interaction --prefer-dist
+          npm ci
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd ${{ secrets.VPS_PATH }}
+            
+            # Backup current version
+            cp .env .env.backup
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Install dependencies
+            composer install --optimize-autoloader --no-dev --no-interaction
+            npm ci && npm run build
+            
+            # Restore environment file
+            cp .env.backup .env
+            
+            # Run Laravel optimizations
+            php artisan migrate --force
+            php artisan optimize
+            php artisan queue:restart
+            
+            # Set proper permissions
+            chmod -R 775 storage bootstrap/cache
+            
+            # Clean up
+            rm .env.backup
+            
+            echo "🚀 Deployment completed successfully!"
+
+      - name: Notify Deployment Success
+        if: success()
+        run: echo "✅ Application deployed successfully to production!"
+
+      - name: Notify Deployment Failure
+        if: failure()
+        run: echo "❌ Deployment failed! Check the logs for details."
