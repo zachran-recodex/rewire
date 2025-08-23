@@ -1,0 +1,122 @@
+name: Deploy Debug
+
+on:
+  workflow_dispatch:  # Manual trigger for debugging
+  push:
+    branches:
+      - deploy
+
+jobs:
+  debug-ssh:
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'echo "SSH Connection Successful"; whoami; pwd; ls -la'
+
+      - name: Check VPS Environment
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} '
+            echo "=== System Info ==="
+            uname -a
+            
+            echo "=== User Info ==="
+            whoami
+            id
+            
+            echo "=== Application Path ==="
+            ls -la ${{ secrets.VPS_PATH }}
+            
+            echo "=== Git Status ==="
+            cd ${{ secrets.VPS_PATH }}
+            git remote -v
+            git branch -a
+            git status
+            
+            echo "=== PHP/Composer Version ==="
+            php --version
+            composer --version
+            
+            echo "=== Node/NPM Version ==="
+            node --version
+            npm --version
+          '
+
+  deploy:
+    needs: debug-ssh
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Application
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} '
+            set -e
+            echo "🚀 Starting deployment..."
+            
+            cd ${{ secrets.VPS_PATH }}
+            
+            # Backup environment
+            echo "💾 Backing up environment..."
+            cp .env .env.backup
+            
+            # Pull latest changes  
+            echo "⬇️ Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/deploy
+            
+            # Install dependencies
+            echo "📦 Installing dependencies..."
+            composer install --optimize-autoloader --no-dev --no-interaction
+            npm ci && npm run build
+            
+            # Restore environment
+            echo "🔧 Restoring environment..."
+            cp .env.backup .env
+            
+            # Laravel optimizations
+            echo "⚡ Running optimizations..."
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan migrate --force
+            php artisan db:seed --force --class=RolesSeeder
+            php artisan optimize
+            php artisan queue:restart
+            
+            # Set permissions
+            echo "🔐 Setting permissions..."
+            chmod -R 775 storage bootstrap/cache
+            
+            # Cleanup
+            echo "🧹 Cleaning up..."
+            rm -f .env.backup
+            
+            echo "✅ Deployment completed successfully!"
+          '
+
+      - name: Verify Deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          curl -f ${{ secrets.APP_URL }}/up || echo "Health check failed"

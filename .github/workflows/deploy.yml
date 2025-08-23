@@ -41,6 +41,20 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          timeout: 30s
+          script: |
+            echo "🔗 SSH connection successful!"
+            whoami
+            pwd
+            echo "Server info: $(uname -a)"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -48,35 +62,66 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          timeout: 300s
+          command_timeout: 60s
+          debug: false
           script: |
+            set -e  # Exit on any error
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to application directory
+            echo "📁 Navigating to application directory..."
             cd ${{ secrets.VPS_PATH }}
+            pwd
+            
+            # Check git status
+            echo "🔍 Checking git status..."
+            git status
+            git branch
             
             # Backup current version
+            echo "💾 Backing up environment file..."
             cp .env .env.backup
             
             # Pull latest changes
-            git pull origin deploy
+            echo "⬇️ Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/deploy
             
             # Install dependencies
-            composer install --optimize-autoloader --no-dev --no-interaction
+            echo "📦 Installing composer dependencies..."
+            composer install --optimize-autoloader --no-dev --no-interaction --prefer-dist
+            
+            echo "📦 Installing npm dependencies and building assets..."
             npm ci && npm run build
             
             # Restore environment file
+            echo "🔧 Restoring environment file..."
             cp .env.backup .env
             
             # Run Laravel optimizations
+            echo "⚡ Running Laravel optimizations..."
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan route:clear
+            php artisan view:clear
             php artisan migrate --force
             php artisan db:seed --force --class=RolesSeeder
-            php artisan optimize
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
             php artisan queue:restart
             
             # Set proper permissions
+            echo "🔐 Setting proper permissions..."
             chmod -R 775 storage bootstrap/cache
+            chown -R www-data:www-data storage bootstrap/cache
             
             # Clean up
+            echo "🧹 Cleaning up..."
             rm .env.backup
             
-            echo "🚀 Deployment completed successfully!"
+            echo "✅ Deployment completed successfully!"
 
       - name: Notify Deployment Success
         if: success()
