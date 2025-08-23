@@ -18,6 +18,8 @@ class ManageUsers extends Component
     public UserForm $form;
 
     public ?User $editing = null;
+    
+    public bool $showEditModal = false;
 
     public function updatedSearch(): void
     {
@@ -39,6 +41,7 @@ class ManageUsers extends Component
 
         $this->editing = $user;
         $this->form->setUser($user);
+        $this->showEditModal = true;
     }
 
     public function update(): void
@@ -47,7 +50,7 @@ class ManageUsers extends Component
 
         $this->form->update();
 
-        $this->dispatch('close-modal', 'edit-'.$this->editing->id);
+        $this->showEditModal = false;
         $this->editing = null;
         session()->flash('message', 'User updated successfully.');
         session()->flash('message_timestamp', microtime(true));

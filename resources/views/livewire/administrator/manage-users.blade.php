@@ -1,6 +1,4 @@
-<div class="space-y-6" 
-     x-data="{}" 
-     x-on:close-modal.window="$flux.modal($event.detail).close()">
+<div class="space-y-6">
     @if (session()->has('message'))
         <flux:callout color="green" icon="check-circle" inline="" wire:key="callout-{{ session('message_timestamp', time()) }}" x-data="{ visible: true }" x-show="visible">
             <flux:callout.heading class="flex gap-2 @max-md:flex-col items-start">{{ session('message') }}</flux:callout.heading>
@@ -114,9 +112,7 @@
                                             <flux:button icon="eye" />
                                         </flux:modal.trigger>
                                         @can('update', $user)
-                                            <flux:modal.trigger name="edit-{{ $user->id }}">
-                                                <flux:button icon="pencil-square" wire:click="edit({{ $user->id }})" />
-                                            </flux:modal.trigger>
+                                            <flux:button icon="pencil-square" wire:click="edit({{ $user->id }})" />
                                         @endcan
                                         @can('delete', $user)
                                             <flux:modal.trigger name="delete-{{ $user->id }}">
@@ -260,74 +256,72 @@
         </div>
     </flux:modal>
 
-    <!-- Edit Modals -->
-    @foreach ($this->users as $user)
-        @can('update', $user)
-            <flux:modal name="edit-{{ $user->id }}" class="md:w-96" wire:key="edit-modal-{{ $user->id }}">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">Edit User</flux:heading>
-                        <flux:text class="mt-2">Update user information.</flux:text>
+    <!-- Edit Modal -->
+    <flux:modal wire:model.self="showEditModal" class="md:w-96">
+        @if($editing)
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Edit User</flux:heading>
+                    <flux:text class="mt-2">Update user information for {{ $editing->name }}.</flux:text>
+                </div>
+
+                <form wire:submit="update">
+                    <div class="space-y-4">
+                        <flux:field>
+                            <flux:label>Full Name</flux:label>
+                            <flux:input wire:model="form.name" placeholder="Enter full name" required />
+                            <flux:error name="form.name" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Username</flux:label>
+                            <flux:input wire:model="form.username" placeholder="Enter username" required />
+                            <flux:error name="form.username" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Email</flux:label>
+                            <flux:input wire:model="form.email" type="email" placeholder="Enter email address" required />
+                            <flux:error name="form.email" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>New Password</flux:label>
+                            <flux:input wire:model="form.password" type="password" placeholder="Leave blank to keep current password" />
+                            <flux:error name="form.password" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Role</flux:label>
+                            <flux:select wire:model="form.role_id" placeholder="Select a role" required>
+                                @foreach ($this->roles as $role)
+                                    <flux:select.option value="{{ $role->id }}">{{ ucwords(str_replace('-', ' ', $role->name)) }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                            <flux:error name="form.role_id" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:checkbox wire:model="form.is_active" label="Active" description="User can log in and access the system" />
+                            <flux:error name="form.is_active" />
+                        </flux:field>
                     </div>
 
-                    <form wire:submit="update">
-                        <div class="space-y-4">
-                            <flux:field>
-                                <flux:label>Full Name</flux:label>
-                                <flux:input wire:model="form.name" placeholder="Enter full name" required />
-                                <flux:error name="form.name" />
-                            </flux:field>
+                    <div class="flex gap-2 mt-6">
+                        <flux:spacer />
 
-                            <flux:field>
-                                <flux:label>Username</flux:label>
-                                <flux:input wire:model="form.username" placeholder="Enter username" required />
-                                <flux:error name="form.username" />
-                            </flux:field>
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Cancel</flux:button>
+                        </flux:modal.close>
 
-                            <flux:field>
-                                <flux:label>Email</flux:label>
-                                <flux:input wire:model="form.email" type="email" placeholder="Enter email address" required />
-                                <flux:error name="form.email" />
-                            </flux:field>
-
-                            <flux:field>
-                                <flux:label>New Password</flux:label>
-                                <flux:input wire:model="form.password" type="password" placeholder="Leave blank to keep current password" />
-                                <flux:error name="form.password" />
-                            </flux:field>
-
-                            <flux:field>
-                                <flux:label>Role</flux:label>
-                                <flux:select wire:model="form.role_id" placeholder="Select a role" required>
-                                    @foreach ($this->roles as $role)
-                                        <flux:select.option value="{{ $role->id }}">{{ ucwords(str_replace('-', ' ', $role->name)) }}</flux:select.option>
-                                    @endforeach
-                                </flux:select>
-                                <flux:error name="form.role_id" />
-                            </flux:field>
-
-                            <flux:field>
-                                <flux:checkbox wire:model="form.is_active" label="Active" description="User can log in and access the system" />
-                                <flux:error name="form.is_active" />
-                            </flux:field>
-                        </div>
-
-                        <div class="flex gap-2 mt-6">
-                            <flux:spacer />
-
-                            <flux:button x-on:click="$flux.modal('edit-{{ $user->id }}').close()" variant="ghost">
-                                Cancel
-                            </flux:button>
-
-                            <flux:button type="submit" variant="primary">
-                                Update
-                            </flux:button>
-                        </div>
-                    </form>
-                </div>
-            </flux:modal>
-        @endcan
-    @endforeach
+                        <flux:button type="submit" variant="primary">
+                            Update
+                        </flux:button>
+                    </div>
+                </form>
+            </div>
+        @endif
+    </flux:modal>
 
     <!-- Delete Modals -->
     @foreach ($this->users as $user)
