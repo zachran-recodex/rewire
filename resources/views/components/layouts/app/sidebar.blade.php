@@ -14,13 +14,13 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('Platform')" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                <flux:navlist.group heading="Platform" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>Dashboard</flux:navlist.item>
                 </flux:navlist.group>
 
                 @role('super-admin|admin')
-                    <flux:navlist.group :heading="__('Administrator')" class="grid">
-                        <flux:navlist.item icon="users" :href="route('administrator.manage-users')" :current="request()->routeIs('administrator.manage-users')" wire:navigate>{{ __('Manage Users') }}</flux:navlist.item>
+                    <flux:navlist.group heading="Administrator" class="grid">
+                        <flux:navlist.item icon="users" :href="route('administrator.manage-users')" :current="request()->routeIs('administrator.manage-users')" wire:navigate>Manage Users</flux:navlist.item>
                     </flux:navlist.group>
                 @endrole
             </flux:navlist>
@@ -28,19 +28,78 @@
             <flux:spacer />
 
             <flux:radio.group x-data variant="segmented" x-model="$flux.appearance">
-                <flux:radio value="light" icon="sun">{{ __('Light') }}</flux:radio>
-                <flux:radio value="dark" icon="moon">{{ __('Dark') }}</flux:radio>
+                <flux:radio value="light" icon="sun">Light</flux:radio>
+                <flux:radio value="dark" icon="moon">Dark</flux:radio>
             </flux:radio.group>
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
+                <flux:navlist.item icon="folder-git-2" href="https://github.com/zachran-recodex/rewire.git" target="_blank">
+                    Repository
                 </flux:navlist.item>
 
                 <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                {{ __('Documentation') }}
+                    Documentation
                 </flux:navlist.item>
             </flux:navlist>
+
+            <!-- Version Info -->
+            <div class="px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700">
+                <div class="flex items-center justify-between">
+                    <span>Version</span>
+                    <flux:badge variant="subtle" size="sm">
+                        @php
+                            $version = 'v1.0-dev';
+                            $buildNumber = 'local';
+                            $commitHash = null;
+                            
+                            // Try to get deployment info first (production)
+                            if (file_exists(base_path('deployment.json'))) {
+                                try {
+                                    $deployInfo = json_decode(file_get_contents(base_path('deployment.json')), true);
+                                    
+                                    if (isset($deployInfo['deployed_at'])) {
+                                        $deployedAt = \Carbon\Carbon::parse($deployInfo['deployed_at']);
+                                        $version = 'v1.' . $deployedAt->format('y') . '.' . $deployedAt->format('z'); // v1.24.365 format
+                                        $buildNumber = '#' . $deployedAt->format('ymdH'); // #24120515 format
+                                        $commitHash = substr($deployInfo['commit_hash'] ?? '', 0, 7);
+                                    }
+                                } catch (Exception $e) {
+                                    $version = 'v1.0-error';
+                                }
+                            }
+                            // Fallback to git for development
+                            elseif (file_exists(base_path('.git/HEAD'))) {
+                                try {
+                                    $head = file_get_contents(base_path('.git/HEAD'));
+                                    if (strpos($head, 'ref:') === 0) {
+                                        $ref = trim(substr($head, 4));
+                                        if (file_exists(base_path('.git/' . $ref))) {
+                                            $hash = trim(file_get_contents(base_path('.git/' . $ref)));
+                                            $commitHash = substr($hash, 0, 7);
+                                        }
+                                    } else {
+                                        $commitHash = substr(trim($head), 0, 7);
+                                    }
+                                    $version = 'v1.0-dev';
+                                    $buildNumber = 'dev-' . $commitHash;
+                                } catch (Exception $e) {
+                                    $version = 'v1.0-unknown';
+                                    $buildNumber = 'unknown';
+                                }
+                            }
+                        @endphp
+                        {{ $version }}
+                    </flux:badge>
+                </div>
+                @if($buildNumber !== 'local')
+                    <div class="text-zinc-400 dark:text-zinc-500 text-[10px] mt-0.5 flex items-center justify-between">
+                        <span>{{ $buildNumber }}</span>
+                        @if($commitHash)
+                            <span class="font-mono">{{ $commitHash }}</span>
+                        @endif
+                    </div>
+                @endif
+            </div>
 
             <!-- Desktop User Menu -->
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
@@ -87,7 +146,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>Settings</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -95,7 +154,7 @@
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">
-                            {{ __('Log Out') }}
+                            Log Out
                         </flux:menu.item>
                     </form>
                 </flux:menu>
@@ -150,7 +209,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>Settings</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -158,7 +217,7 @@
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
                         <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle" class="w-full">
-                            {{ __('Log Out') }}
+                            Log Out
                         </flux:menu.item>
                     </form>
                 </flux:menu>
