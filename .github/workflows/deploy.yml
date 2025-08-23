@@ -128,16 +128,19 @@ jobs:
             php artisan view:cache
             php artisan queue:restart
             
-            # Set proper permissions
+            # Set proper permissions (correct order)
             echo "🔐 Setting proper permissions..."
-            sudo chown -R www-data:www-data storage bootstrap/cache
+            # 1. Set user ownership first for deployment operations
             sudo chown -R $USER:$USER .
-            chmod -R 775 storage bootstrap/cache
+            # 2. Set web server ownership for Laravel writable directories
+            sudo chown -R www-data:www-data storage bootstrap/cache
+            # 3. Set permissions with sudo (since owned by www-data)
+            sudo chmod -R 775 storage bootstrap/cache
             chmod u+w .env
             
-            # Clean up
+            # Clean up safely
             echo "🧹 Cleaning up..."
-            rm .env.backup
+            rm -f .env.backup
             
             echo "✅ Deployment completed successfully!"
 
