@@ -231,9 +231,9 @@ jobs:
             
             # Create deployment info file
             echo "📝 Creating deployment info..."
-            cat > deployment.json << 'DEPLOYEOF'
+            cat > deployment.json << DEPLOYEOF
             {
-                "deployed_at": "$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")",
+                "deployed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
                 "commit_hash": "$(git rev-parse HEAD)",
                 "commit_short": "$(git rev-parse --short HEAD)",
                 "branch": "$(git rev-parse --abbrev-ref HEAD)",
@@ -243,6 +243,14 @@ jobs:
             }
             DEPLOYEOF
             
+            # Set proper permissions before Laravel operations
+            echo "🔐 Setting proper permissions for Laravel operations..."
+            # 1. Set user ownership first for all deployment operations
+            sudo chown -R $USER:$USER .
+            # 2. Ensure Laravel can write to required directories during operations
+            chmod -R 775 storage bootstrap/cache
+            chmod u+w .env
+
             # Laravel optimizations
             echo "⚡ Running optimizations..."
             php artisan config:clear
@@ -252,15 +260,12 @@ jobs:
             php artisan optimize
             php artisan queue:restart
             
-            # Set proper permissions (correct order)
-            echo "🔐 Setting proper permissions..."
-            # 1. Set user ownership first for deployment operations
-            sudo chown -R $USER:$USER .
-            # 2. Set web server ownership for Laravel writable directories
+            # Set final web server permissions
+            echo "🔐 Setting final web server permissions..."
+            # Set web server ownership for Laravel writable directories
             sudo chown -R www-data:www-data storage bootstrap/cache
-            # 3. Set permissions with sudo (since owned by www-data)
+            # Ensure web server can write
             sudo chmod -R 775 storage bootstrap/cache
-            chmod u+w .env
             
             # Cleanup
             echo "🧹 Cleaning up..."

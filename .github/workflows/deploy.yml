@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment: Production
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,22 +68,22 @@ jobs:
           script: |
             set -e  # Exit on any error
             echo "🚀 Starting deployment..."
-            
+
             # Navigate to application directory
             echo "📁 Navigating to application directory..."
             cd ${{ secrets.VPS_PATH }}
             pwd
-            
+
             # Check git status
             echo "🔍 Checking git status..."
             git status
             git branch
-            
+
             # Check and fix permissions first
             echo "🔐 Checking and fixing permissions..."
             sudo chown -R $USER:$USER .
             chmod u+w . .env 2>/dev/null || true
-            
+
             # Backup current version
             echo "💾 Backing up environment file..."
             if [ -f .env ]; then
@@ -93,19 +93,19 @@ jobs:
               echo "⚠️  No .env file found, creating from .env.example"
               cp .env.example .env || echo "No .env.example found"
             fi
-            
+
             # Pull latest changes
             echo "⬇️ Pulling latest changes..."
             git fetch origin
             git reset --hard origin/deploy
-            
+
             # Install dependencies
             echo "📦 Installing composer dependencies..."
             composer install --optimize-autoloader --no-dev --no-interaction --prefer-dist
-            
+
             echo "📦 Installing npm dependencies and building assets..."
             npm ci && npm run build
-            
+
             # Restore environment file
             echo "🔧 Restoring environment file..."
             if [ -f .env.backup ]; then
@@ -114,10 +114,10 @@ jobs:
             else
               echo "⚠️  No backup found, keeping current .env"
             fi
-            
+
             # Create deployment info file
             echo "📝 Creating deployment info..."
-            cat > deployment.json << 'DEPLOYEOF'
+            cat > deployment.json << DEPLOYEOF
             {
                 "deployed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
                 "commit_hash": "$(git rev-parse HEAD)",
@@ -128,34 +128,34 @@ jobs:
                 "environment": "production"
             }
             DEPLOYEOF
-            
+
+            # Set proper permissions before Laravel operations
+            echo "🔐 Setting proper permissions for Laravel operations..."
+            # 1. Set user ownership first for all deployment operations
+            sudo chown -R $USER:$USER .
+            # 2. Ensure Laravel can write to required directories during operations
+            chmod -R 775 storage bootstrap/cache
+            chmod u+w .env
+
             # Run Laravel optimizations
             echo "⚡ Running Laravel optimizations..."
-            php artisan config:clear
-            php artisan cache:clear
-            php artisan route:clear
-            php artisan view:clear
+            php artisan optimize:clear
             php artisan migrate --force
             php artisan db:seed --force --class=RolesSeeder
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+            php artisan optimize
             php artisan queue:restart
-            
-            # Set proper permissions (correct order)
-            echo "🔐 Setting proper permissions..."
-            # 1. Set user ownership first for deployment operations
-            sudo chown -R $USER:$USER .
-            # 2. Set web server ownership for Laravel writable directories
+
+            # Set final web server permissions
+            echo "🔐 Setting final web server permissions..."
+            # Set web server ownership for Laravel writable directories
             sudo chown -R www-data:www-data storage bootstrap/cache
-            # 3. Set permissions with sudo (since owned by www-data)
+            # Ensure web server can write
             sudo chmod -R 775 storage bootstrap/cache
-            chmod u+w .env
-            
+
             # Clean up safely
             echo "🧹 Cleaning up..."
             rm -f .env.backup
-            
+
             echo "✅ Deployment completed successfully!"
 
       - name: Notify Deployment Success
