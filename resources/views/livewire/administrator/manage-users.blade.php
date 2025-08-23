@@ -113,9 +113,12 @@
                                             <flux:button icon="pencil-square" wire:click="edit({{ $user->id }})" />
                                         @endcan
                                         @can('delete', $user)
-                                            <flux:modal.trigger name="delete-{{ $user->id }}">
-                                                <flux:button icon="trash" variant="danger" />
-                                            </flux:modal.trigger>
+                                            <flux:button 
+                                                icon="trash" 
+                                                variant="danger" 
+                                                x-data
+                                                x-on:click="$flux.modal('delete-{{ $user->id }}').show()"
+                                            />
                                         @endcan
                                     </flux:button.group>
                                 </div>
@@ -146,7 +149,7 @@
 
     <!-- Show Modals -->
     @foreach ($this->users as $user)
-        <flux:modal name="show-{{ $user->id }}" class="md:w-96">
+        <flux:modal name="show-{{ $user->id }}" class="md:w-96" wire:key="show-modal-{{ $user->id }}">
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">User Details</flux:heading>
@@ -181,7 +184,7 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:button variant="ghost" x-on:click="$flux.modal('show-{{ $user->id }}').close()">
+                    <flux:button variant="ghost" x-data x-on:click="$flux.modal('show-{{ $user->id }}').close()">
                         Close
                     </flux:button>
                 </div>
@@ -324,7 +327,7 @@
     <!-- Delete Modals -->
     @foreach ($this->users as $user)
         @can('delete', $user)
-            <flux:modal :name="'delete-'.$user->id" class="min-w-[22rem]">
+            <flux:modal name="delete-{{ $user->id }}" class="min-w-[22rem]" wire:key="delete-modal-{{ $user->id }}">
                 <div class="space-y-6">
                     <div>
                         <flux:heading size="lg">Delete User?</flux:heading>
@@ -335,10 +338,10 @@
                     </div>
                     <div class="flex gap-2">
                         <flux:spacer />
-                        <flux:button variant="ghost" x-on:click="$flux.modal('delete-{{ $user->id }}').close()">
+                        <flux:button variant="ghost" x-data x-on:click="$flux.modal('delete-{{ $user->id }}').close()">
                             Cancel
                         </flux:button>
-                        <flux:button wire:click="delete({{ $user->id }})" variant="danger">
+                        <flux:button wire:click="delete({{ $user->id }})" variant="danger" x-data x-on:click="$flux.modal('delete-{{ $user->id }}').close()">
                             Delete
                         </flux:button>
                     </div>
