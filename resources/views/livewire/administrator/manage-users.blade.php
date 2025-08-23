@@ -112,7 +112,7 @@
                                             <flux:button icon="eye" />
                                         </flux:modal.trigger>
                                         @can('update', $user)
-                                            <flux:button icon="pencil-square" wire:click="edit({{ $user->id }})" x-on:click="$flux.modal('edit').show()" />
+                                            <flux:button icon="pencil-square" wire:click="edit({{ $user->id }})" x-on:click="$flux.modal('edit-{{ $user->id }}').show()" />
                                         @endcan
                                         @can('delete', $user)
                                             <flux:modal.trigger name="delete-{{ $user->id }}">
@@ -258,7 +258,7 @@
 
     <!-- Edit Modal -->
     @if($editing)
-        <flux:modal name="edit" class="md:w-96">
+        <flux:modal name="edit-{{ $editing->id }}" class="md:w-96">
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Edit User</flux:heading>
@@ -310,7 +310,7 @@
                     <div class="flex gap-2 mt-6">
                         <flux:spacer />
 
-                        <flux:button x-on:click="$flux.modal('edit').close()" variant="ghost">
+                        <flux:button x-on:click="$flux.modal('edit-{{ $editing->id }}').close()" variant="ghost">
                             Cancel
                         </flux:button>
 
