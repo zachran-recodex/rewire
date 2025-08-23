@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Administrator;
 
+use App\Livewire\Forms\UserForm;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Livewire\Attributes\Validate;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
@@ -15,25 +15,9 @@ class ManageUsers extends Component
 
     public $search = '';
 
-    #[Validate('required|string|max:255')]
-    public $name = '';
+    public UserForm $form;
 
-    #[Validate('required|string|max:255|unique:users,username')]
-    public $username = '';
-
-    #[Validate('required|email|unique:users,email')]
-    public $email = '';
-
-    #[Validate('required|string|min:8')]
-    public $password = '';
-
-    #[Validate('required|exists:roles,id')]
-    public $role_id = '';
-
-    #[Validate('boolean')]
-    public $is_active = true;
-
-    public $editForm = [];
+    public ?User $editing = null;
 
     public function updatedSearch(): void
     {
@@ -42,74 +26,37 @@ class ManageUsers extends Component
 
     public function create(): void
     {
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
-            'role_id' => 'required|exists:roles,id',
-            'is_active' => 'boolean',
-        ]);
+        $user = $this->form->store();
 
-        $user = User::create([
-            'name' => $this->name,
-            'username' => $this->username,
-            'email' => $this->email,
-            'password' => Hash::make($this->password),
-            'is_active' => $this->is_active,
-        ]);
-
-        $role = Role::find($this->role_id);
-        $user->assignRole($role);
-
-        $this->resetForm();
         $this->modal('create')->close();
         session()->flash('message', 'User created successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
 
-    public function updateUser(int $userId): void
+    public function edit(User $user): void
     {
-        $user = User::findOrFail($userId);
-        $formData = $this->editForm[$userId];
+        $this->authorize('update', $user);
 
-        $rules = [
-            'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username,'.$userId,
-            'email' => 'required|email|unique:users,email,'.$userId,
-            'password' => 'nullable|string|min:8',
-            'role_id' => 'required|exists:roles,id',
-            'is_active' => 'boolean',
-        ];
+        $this->editing = $user;
+        $this->form->setUser($user);
+    }
 
-        $this->validate(array_combine(
-            array_map(fn ($key) => "editForm.{$userId}.{$key}", array_keys($rules)),
-            $rules
-        ));
+    public function update(): void
+    {
+        $this->authorize('update', $this->editing);
 
-        $updateData = [
-            'name' => $formData['name'],
-            'username' => $formData['username'],
-            'email' => $formData['email'],
-            'is_active' => $formData['is_active'] ?? false,
-        ];
+        $this->form->update();
 
-        if (! empty($formData['password'])) {
-            $updateData['password'] = Hash::make($formData['password']);
-        }
-
-        $user->update($updateData);
-
-        $role = Role::find($formData['role_id']);
-        $user->syncRoles($role);
-
-        $this->modal('edit-'.$userId)->close();
+        $this->modal('edit-'.$this->editing->id)->close();
+        $this->editing = null;
         session()->flash('message', 'User updated successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
 
-    public function deleteUser(User $user): void
+    public function delete(User $user): void
     {
+        $this->authorize('delete', $user);
+
         $user->delete();
         $this->modal('delete-'.$user->id)->close();
         session()->flash('message', 'User deleted successfully.');
@@ -121,24 +68,20 @@ class ManageUsers extends Component
         if ($modalName) {
             $this->modal($modalName)->close();
         }
-        
-        // Dispatch JavaScript event as fallback
+
+        // Reset editing state when closing modals
+        if ($this->editing) {
+            $this->editing = null;
+            $this->form->reset();
+        }
+
         $this->dispatch('modal-close', name: $modalName);
     }
 
-    private function resetForm(): void
+    #[Computed]
+    public function users()
     {
-        $this->name = '';
-        $this->username = '';
-        $this->email = '';
-        $this->password = '';
-        $this->role_id = '';
-        $this->is_active = true;
-    }
-
-    public function render()
-    {
-        $users = User::query()
+        return User::query()
             ->with('roles')
             ->whereDoesntHave('roles', function ($query) {
                 $query->where('name', 'super-admin');
@@ -152,25 +95,16 @@ class ManageUsers extends Component
             })
             ->latest()
             ->paginate(10);
+    }
 
-        $roles = Role::where('name', '!=', 'super-admin')->get();
+    #[Computed]
+    public function roles()
+    {
+        return Role::where('name', '!=', 'super-admin')->get();
+    }
 
-        foreach ($users as $user) {
-            if (! isset($this->editForm[$user->id])) {
-                $this->editForm[$user->id] = [
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'password' => '',
-                    'role_id' => $user->roles->first()?->id ?? '',
-                    'is_active' => $user->is_active,
-                ];
-            }
-        }
-
-        return view('livewire.administrator.manage-users', [
-            'users' => $users,
-            'roles' => $roles,
-        ]);
+    public function render()
+    {
+        return view('livewire.administrator.manage-users');
     }
 }
