@@ -1,0 +1,255 @@
+name: SSH Key Verification & Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug_level:
+        description: 'Debug Level'
+        required: true
+        default: 'verbose'
+        type: choice
+        options:
+          - basic
+          - verbose
+          - extreme
+
+jobs:
+  ssh-verify:
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: GitHub Secrets Validation
+        run: |
+          echo "=== GitHub Secrets Validation ==="
+          echo "VPS_HOST: ${{ secrets.VPS_HOST }}"
+          echo "VPS_USERNAME: ${{ secrets.VPS_USERNAME }}"
+          echo "VPS_PORT: ${{ secrets.VPS_PORT }}"
+          echo "VPS_PATH: ${{ secrets.VPS_PATH }}"
+          
+          echo "VPS_HOST length: ${#VPS_HOST}"
+          echo "VPS_USERNAME length: ${#VPS_USERNAME}" 
+          echo "VPS_SSH_KEY length: ${#VPS_SSH_KEY}"
+          echo "VPS_PATH length: ${#VPS_PATH}"
+          
+          # Check if secrets are set
+          [ -n "$VPS_HOST" ] && echo "✅ VPS_HOST is set" || echo "❌ VPS_HOST is empty"
+          [ -n "$VPS_USERNAME" ] && echo "✅ VPS_USERNAME is set" || echo "❌ VPS_USERNAME is empty"
+          [ -n "$VPS_SSH_KEY" ] && echo "✅ VPS_SSH_KEY is set" || echo "❌ VPS_SSH_KEY is empty"
+          [ -n "$VPS_PORT" ] && echo "✅ VPS_PORT is set" || echo "❌ VPS_PORT is empty"
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_PATH: ${{ secrets.VPS_PATH }}
+
+      - name: Setup SSH Directory
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "=== SSH Directory Setup ==="
+          ls -la ~/.ssh || echo "Directory created"
+
+      - name: Create SSH Key File
+        run: |
+          echo "=== Creating SSH Key File ==="
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          echo "SSH key file created:"
+          ls -la ~/.ssh/id_rsa
+          echo "File size: $(wc -c < ~/.ssh/id_rsa) bytes"
+
+      - name: SSH Key Format Validation
+        run: |
+          echo "=== SSH Key Format Validation ==="
+          
+          # Check file type
+          echo "File type detection:"
+          file ~/.ssh/id_rsa || echo "Cannot detect file type"
+          
+          # Check key format
+          echo -e "\nKey format analysis:"
+          echo "First 5 lines:"
+          head -n 5 ~/.ssh/id_rsa || echo "Cannot read first lines"
+          
+          echo -e "\nLast 5 lines:"
+          tail -n 5 ~/.ssh/id_rsa || echo "Cannot read last lines"
+          
+          echo -e "\nTotal lines: $(wc -l < ~/.ssh/id_rsa)"
+          
+          # Check for common key headers
+          echo -e "\nKey header check:"
+          if head -n 1 ~/.ssh/id_rsa | grep -q "BEGIN"; then
+            echo "✅ Key has proper BEGIN header"
+            head -n 1 ~/.ssh/id_rsa
+          else
+            echo "❌ Key missing proper BEGIN header"
+            echo "First line: $(head -n 1 ~/.ssh/id_rsa)"
+          fi
+          
+          if tail -n 1 ~/.ssh/id_rsa | grep -q "END"; then
+            echo "✅ Key has proper END footer"
+            tail -n 1 ~/.ssh/id_rsa
+          else
+            echo "❌ Key missing proper END footer"
+            echo "Last line: $(tail -n 1 ~/.ssh/id_rsa)"
+          fi
+
+      - name: SSH Key Technical Validation
+        run: |
+          echo "=== SSH Key Technical Validation ==="
+          
+          # Test key validity with ssh-keygen
+          echo "Testing key validity with ssh-keygen:"
+          if ssh-keygen -l -f ~/.ssh/id_rsa; then
+            echo "✅ SSH key is technically valid"
+          else
+            echo "❌ SSH key validation failed"
+            echo "This usually means:"
+            echo "1. Key is encrypted with passphrase"
+            echo "2. Key format is incorrect"
+            echo "3. Key is corrupted"
+          fi
+          
+          # Try to generate public key from private key
+          echo -e "\nTesting public key generation:"
+          if ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub 2>/dev/null; then
+            echo "✅ Can generate public key from private key"
+            echo "Generated public key:"
+            cat ~/.ssh/id_rsa.pub
+            
+            # Show fingerprint
+            echo -e "\nPublic key fingerprint:"
+            ssh-keygen -l -f ~/.ssh/id_rsa.pub
+          else
+            echo "❌ Cannot generate public key - key may have passphrase or be invalid"
+          fi
+
+      - name: Create SSH Config
+        run: |
+          echo "=== Creating SSH Config ==="
+          cat > ~/.ssh/config << EOF
+          Host vps-target
+            HostName ${{ secrets.VPS_HOST }}
+            User ${{ secrets.VPS_USERNAME }}
+            Port ${{ secrets.VPS_PORT }}
+            IdentityFile ~/.ssh/id_rsa
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            PasswordAuthentication no
+            PubkeyAuthentication yes
+            IdentitiesOnly yes
+            ConnectTimeout 30
+            ServerAliveInterval 60
+            ServerAliveCountMax 3
+          EOF
+          chmod 600 ~/.ssh/config
+          
+          echo "SSH config created:"
+          cat ~/.ssh/config
+
+      - name: Network Connectivity Test
+        run: |
+          echo "=== Network Connectivity Test ==="
+          
+          # Test basic network connectivity
+          echo "Testing network connectivity to ${{ secrets.VPS_HOST }}:${{ secrets.VPS_PORT }}"
+          
+          if timeout 10 nc -zv ${{ secrets.VPS_HOST }} ${{ secrets.VPS_PORT }}; then
+            echo "✅ Network connectivity successful"
+          else
+            echo "❌ Cannot reach ${{ secrets.VPS_HOST }}:${{ secrets.VPS_PORT }}"
+            echo "This could indicate:"
+            echo "1. VPS is down"
+            echo "2. Firewall blocking connection"
+            echo "3. Wrong host/port in secrets"
+          fi
+
+      - name: SSH Connection Tests
+        run: |
+          echo "=== SSH Connection Tests ==="
+          
+          # Method 1: Basic connection test
+          echo "Method 1: Basic SSH connection test"
+          if timeout 30 ssh -o BatchMode=yes -o ConnectTimeout=10 -F ~/.ssh/config vps-target 'echo "SSH_SUCCESS: $(whoami)@$(hostname)"' 2>&1; then
+            echo "✅ Method 1: SUCCESS"
+          else
+            echo "❌ Method 1: FAILED"
+          fi
+          
+          echo -e "\n" + "="*50
+          
+          # Method 2: Direct SSH with explicit key
+          echo "Method 2: Direct SSH with explicit parameters"
+          if timeout 30 ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/id_rsa -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'echo "SSH_DIRECT_SUCCESS: $(whoami)@$(hostname)"' 2>&1; then
+            echo "✅ Method 2: SUCCESS"
+          else
+            echo "❌ Method 2: FAILED"
+          fi
+
+      - name: Verbose SSH Debug (if enabled)
+        if: ${{ github.event.inputs.debug_level == 'verbose' || github.event.inputs.debug_level == 'extreme' }}
+        run: |
+          echo "=== Verbose SSH Debug ==="
+          echo "Running SSH with verbose debug output..."
+          
+          timeout 45 ssh -vvv -o BatchMode=yes -o ConnectTimeout=15 -F ~/.ssh/config vps-target 'echo "VERBOSE_DEBUG_SUCCESS"' 2>&1 | head -100 || true
+
+      - name: Extreme Debug Mode
+        if: ${{ github.event.inputs.debug_level == 'extreme' }}
+        run: |
+          echo "=== Extreme Debug Mode ==="
+          
+          echo "SSH client version:"
+          ssh -V
+          
+          echo -e "\nSSH algorithms and ciphers:"
+          ssh -Q cipher
+          ssh -Q kex
+          ssh -Q key
+          
+          echo -e "\nTesting different SSH algorithms:"
+          for cipher in aes128-ctr aes192-ctr aes256-ctr; do
+            echo "Testing cipher: $cipher"
+            timeout 15 ssh -c $cipher -o BatchMode=yes -o ConnectTimeout=5 -F ~/.ssh/config vps-target 'echo "CIPHER_TEST_SUCCESS"' 2>&1 | head -10 || echo "Cipher $cipher failed"
+          done
+
+      - name: SSH Troubleshooting Recommendations
+        if: always()
+        run: |
+          echo "=== SSH Troubleshooting Recommendations ==="
+          echo ""
+          echo "If all connection tests failed, please check:"
+          echo ""
+          echo "1. 🔑 SSH Key Issues:"
+          echo "   - Generate new SSH key pair WITHOUT passphrase"
+          echo "   - Add public key to VPS ~/.ssh/authorized_keys"
+          echo "   - Copy private key (with headers) to VPS_SSH_KEY secret"
+          echo ""
+          echo "2. 🖥️  VPS Configuration:"
+          echo "   - SSH service is running: sudo systemctl status ssh"
+          echo "   - User exists and has home directory"
+          echo "   - ~/.ssh/authorized_keys permissions are 600"
+          echo "   - ~/.ssh directory permissions are 700"
+          echo ""
+          echo "3. 🔗 GitHub Secrets:"
+          echo "   - VPS_HOST: Correct IP address or domain"
+          echo "   - VPS_USERNAME: Existing user on VPS"
+          echo "   - VPS_PORT: Correct SSH port (usually 22)"
+          echo "   - VPS_SSH_KEY: Private key with -----BEGIN/END----- headers"
+          echo ""
+          echo "4. 🔥 Firewall & Network:"
+          echo "   - SSH port is open in VPS firewall"
+          echo "   - No network connectivity issues"
+          echo ""
+          echo "Commands to run on VPS:"
+          echo "  sudo ufw status"
+          echo "  sudo systemctl status ssh"
+          echo "  tail -f /var/log/auth.log"
+          echo ""
+          echo "Next steps: Review SSH-FIX.md for detailed instructions"
