@@ -16,10 +16,24 @@ class RolesSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create roles
-        Role::create(['name' => 'super-admin']);
-        Role::create(['name' => 'admin']);
-        Role::create(['name' => 'user']);
+        // Create roles (idempotent - only create if they don't exist)
+        $superAdmin = Role::firstOrCreate(
+            ['name' => 'super-admin', 'guard_name' => 'web']
+        );
+        
+        $admin = Role::firstOrCreate(
+            ['name' => 'admin', 'guard_name' => 'web']
+        );
+        
+        $user = Role::firstOrCreate(
+            ['name' => 'user', 'guard_name' => 'web']
+        );
+
+        // Log the results for debugging
+        $this->command->info('Roles seeded successfully:');
+        $this->command->info("- super-admin: " . ($superAdmin->wasRecentlyCreated ? 'created' : 'already exists'));
+        $this->command->info("- admin: " . ($admin->wasRecentlyCreated ? 'created' : 'already exists'));  
+        $this->command->info("- user: " . ($user->wasRecentlyCreated ? 'created' : 'already exists'));
 
         // Reset cache again after creating roles
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
