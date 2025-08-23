@@ -195,9 +195,20 @@ jobs:
             
             cd ${{ secrets.VPS_PATH }}
             
+            # Check and fix permissions first
+            echo "🔐 Checking and fixing permissions..."
+            sudo chown -R $USER:$USER .
+            chmod u+w . .env 2>/dev/null || true
+            
             # Backup environment
             echo "💾 Backing up environment..."
-            cp .env .env.backup
+            if [ -f .env ]; then
+              cp .env .env.backup
+              echo "✅ Environment file backed up"
+            else
+              echo "⚠️  No .env file found, creating from .env.example"
+              cp .env.example .env || echo "No .env.example found"
+            fi
             
             # Pull latest changes  
             echo "⬇️ Pulling latest changes..."
@@ -211,7 +222,12 @@ jobs:
             
             # Restore environment
             echo "🔧 Restoring environment..."
-            cp .env.backup .env
+            if [ -f .env.backup ]; then
+              cp .env.backup .env
+              echo "✅ Environment file restored"
+            else
+              echo "⚠️  No backup found, keeping current .env"
+            fi
             
             # Laravel optimizations
             echo "⚡ Running optimizations..."
@@ -222,9 +238,12 @@ jobs:
             php artisan optimize
             php artisan queue:restart
             
-            # Set permissions
-            echo "🔐 Setting permissions..."
+            # Set proper permissions
+            echo "🔐 Setting proper permissions..."
+            sudo chown -R www-data:www-data storage bootstrap/cache
+            sudo chown -R $USER:$USER .
             chmod -R 775 storage bootstrap/cache
+            chmod u+w .env
             
             # Cleanup
             echo "🧹 Cleaning up..."
