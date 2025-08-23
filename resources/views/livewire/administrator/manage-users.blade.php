@@ -255,8 +255,8 @@
     </flux:modal>
 
     <!-- Edit Modal -->
-    <flux:modal wire:model.self="showEditModal" class="md:w-96">
-        @if($editing)
+    @if($editing)
+        <flux:modal wire:model.self="showEditModal" class="md:w-96">
             <div class="space-y-6">
                 <div>
                     <flux:heading size="lg">Edit User</flux:heading>
@@ -308,7 +308,7 @@
                     <div class="flex gap-2 mt-6">
                         <flux:spacer />
 
-                        <flux:button variant="ghost" wire:click="$set('showEditModal', false)">
+                        <flux:button variant="ghost" wire:click="closeEditModal">
                             Cancel
                         </flux:button>
 
@@ -318,8 +318,8 @@
                     </div>
                 </form>
             </div>
-        @endif
-    </flux:modal>
+        </flux:modal>
+    @endif
 
     <!-- Delete Modals -->
     @foreach ($this->users as $user)

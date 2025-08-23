@@ -70,6 +70,10 @@ class UserForm extends Form
 
     public function update(): void
     {
+        if (! $this->user) {
+            throw new \Exception('No user set for update');
+        }
+
         $this->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,'.$this->user->id,
@@ -93,6 +97,8 @@ class UserForm extends Form
         $this->user->update($updateData);
 
         $role = Role::find($this->role_id);
-        $this->user->syncRoles($role);
+        if ($role) {
+            $this->user->syncRoles($role);
+        }
     }
 }

@@ -18,7 +18,7 @@ class ManageUsers extends Component
     public UserForm $form;
 
     public ?User $editing = null;
-    
+
     public bool $showEditModal = false;
 
     public function updatedSearch(): void
@@ -38,10 +38,10 @@ class ManageUsers extends Component
 
     public function updatedShowEditModal($value): void
     {
-        if (!$value) {
+        if (! $value) {
             // Reset form and editing state when closing edit modal
-            $this->editing = null;
             $this->form->reset();
+            $this->editing = null;
         }
     }
 
@@ -65,14 +65,21 @@ class ManageUsers extends Component
 
     public function update(): void
     {
+        if (! $this->editing) {
+            return;
+        }
+
         $this->authorize('update', $this->editing);
 
         $this->form->update();
 
         $this->showEditModal = false;
-        $this->editing = null;
         session()->flash('message', 'User updated successfully.');
         session()->flash('message_timestamp', microtime(true));
+
+        // Reset after successful update
+        $this->form->reset();
+        $this->editing = null;
     }
 
     public function delete(User $user): void
@@ -84,6 +91,12 @@ class ManageUsers extends Component
         session()->flash('message_timestamp', microtime(true));
     }
 
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->form->reset();
+        $this->editing = null;
+    }
 
     #[Computed]
     public function users()
