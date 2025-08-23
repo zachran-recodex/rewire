@@ -51,40 +51,65 @@
                             $version = 'v1.0-dev';
                             $buildNumber = 'local';
                             $commitHash = null;
+                            $branch = 'main';
                             
-                            // Try to get deployment info first (production)
-                            if (file_exists(base_path('deployment.json'))) {
+                            // Check if we're in production environment or have deployment.json
+                            $isProduction = app()->environment('production');
+                            $hasDeploymentInfo = file_exists(base_path('deployment.json'));
+                            
+                            // Try to get deployment info first (production or any environment with deployment.json)
+                            if ($hasDeploymentInfo) {
                                 try {
                                     $deployInfo = json_decode(file_get_contents(base_path('deployment.json')), true);
                                     
                                     if (isset($deployInfo['deployed_at'])) {
                                         $deployedAt = \Carbon\Carbon::parse($deployInfo['deployed_at']);
-                                        $version = 'v1.' . $deployedAt->format('y') . '.' . $deployedAt->format('z'); // v1.24.365 format
-                                        $buildNumber = '#' . $deployedAt->format('ymdH'); // #24120515 format
-                                        $commitHash = substr($deployInfo['commit_hash'] ?? '', 0, 7);
+                                        
+                                        // Create version based on deployment date: v1.YY.DDD (year.dayOfYear)
+                                        $version = 'v1.' . $deployedAt->format('y') . '.' . $deployedAt->dayOfYear;
+                                        
+                                        // Build number with timestamp: deploy-MMDDHHII
+                                        $buildNumber = 'deploy-' . $deployedAt->format('mdHi');
+                                        
+                                        // Get commit info
+                                        $commitHash = isset($deployInfo['commit_short']) 
+                                            ? $deployInfo['commit_short'] 
+                                            : substr($deployInfo['commit_hash'] ?? '', 0, 7);
+                                            
+                                        $branch = $deployInfo['branch'] ?? 'deploy';
                                     }
                                 } catch (Exception $e) {
                                     $version = 'v1.0-error';
                                 }
                             }
-                            // Fallback to git for development
-                            elseif (file_exists(base_path('.git/HEAD'))) {
+                            // Development: Use git info for real-time version
+                            else {
                                 try {
-                                    $head = file_get_contents(base_path('.git/HEAD'));
-                                    if (strpos($head, 'ref:') === 0) {
-                                        $ref = trim(substr($head, 4));
-                                        if (file_exists(base_path('.git/' . $ref))) {
-                                            $hash = trim(file_get_contents(base_path('.git/' . $ref)));
-                                            $commitHash = substr($hash, 0, 7);
+                                    // Get current branch
+                                    if (file_exists(base_path('.git/HEAD'))) {
+                                        $head = trim(file_get_contents(base_path('.git/HEAD')));
+                                        if (strpos($head, 'ref: refs/heads/') === 0) {
+                                            $branch = substr($head, 16); // Remove "ref: refs/heads/"
+                                            $refFile = base_path('.git/refs/heads/' . $branch);
+                                            if (file_exists($refFile)) {
+                                                $hash = trim(file_get_contents($refFile));
+                                                $commitHash = substr($hash, 0, 7);
+                                            }
+                                        } else {
+                                            // Detached HEAD state
+                                            $commitHash = substr($head, 0, 7);
                                         }
-                                    } else {
-                                        $commitHash = substr(trim($head), 0, 7);
                                     }
-                                    $version = 'v1.0-dev';
-                                    $buildNumber = 'dev-' . $commitHash;
+                                    
+                                    // Create development version with timestamp
+                                    $timestamp = now();
+                                    $version = 'v1.' . $timestamp->format('y') . '.' . $timestamp->dayOfYear;
+                                    $buildNumber = 'dev-' . $timestamp->format('mdH') . ($commitHash ? '-' . $commitHash : '');
+                                    
                                 } catch (Exception $e) {
-                                    $version = 'v1.0-unknown';
-                                    $buildNumber = 'unknown';
+                                    $version = 'v1.0-dev';
+                                    $buildNumber = 'dev-error';
+                                    $commitHash = 'unknown';
                                 }
                             }
                         @endphp
@@ -98,6 +123,11 @@
                             <span class="font-mono">{{ $commitHash }}</span>
                         @endif
                     </div>
+                    @if($branch && $branch !== 'main')
+                        <div class="text-zinc-400 dark:text-zinc-500 text-[10px] mt-0.5">
+                            <span class="px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded text-[9px]">{{ $branch }}</span>
+                        </div>
+                    @endif
                 @endif
             </div>
 
