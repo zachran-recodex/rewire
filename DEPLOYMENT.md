@@ -284,7 +284,6 @@ sudo nano /etc/nginx/sites-available/rewire
 
 ```nginx
 server {
-    listen 80;
     server_name rewire.web.id www.rewire.web.id;
     root /var/www/rewire/public;
 
@@ -305,14 +304,20 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
-    location = /favicon.ico { 
-        access_log off; 
-        log_not_found off; 
+    location = /favicon.ico {
+        access_log off;
+        log_not_found off;
     }
-    
-    location = /robots.txt  { 
-        access_log off; 
-        log_not_found off; 
+
+    location = /robots.txt  {
+        access_log off;
+        log_not_found off;
+    }
+
+    # Flux assets configuration
+    location ~ ^/flux/flux(\.min)?\.(js|css)$ {
+        expires off;
+        try_files $uri $uri/ /index.php?$query_string;
     }
 
     error_page 404 /index.php;
@@ -328,11 +333,42 @@ server {
         deny all;
     }
 
+    # Livewire assets configuration
+    location = /livewire/livewire.js {
+        expires off;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /livewire/livewire.min.js {
+        expires off;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
     # Security headers
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/rewire.web.id/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/rewire.web.id/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = www.rewire.web.id) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    if ($host = rewire.web.id) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name rewire.web.id www.rewire.web.id;
+    return 404; # managed by Certbot
 }
 ```
 

@@ -181,9 +181,9 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:modal.close>
-                        <flux:button variant="ghost">Close</flux:button>
-                    </flux:modal.close>
+                    <flux:button x-on:click="$flux.modal('show-{{ $user->id }}').close()" variant="ghost">
+                        Close
+                    </flux:button>
                 </div>
             </div>
         </flux:modal>
@@ -191,12 +191,13 @@
 
     <!-- Create Modal -->
     <flux:modal name="create" class="md:w-96">
-        <form wire:submit="create">
-            <div class="space-y-6">
-                <div>
-                    <flux:heading size="lg">Create New User</flux:heading>
-                    <flux:text class="mt-2">Add a new user to the system.</flux:text>
-                </div>
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Create New User</flux:heading>
+                <flux:text class="mt-2">Add a new user to the system.</flux:text>
+            </div>
+
+            <form wire:submit="create">
 
                 <div class="space-y-4">
                     <flux:field>
@@ -242,23 +243,28 @@
                 <div class="flex gap-2">
                     <flux:spacer />
 
+                    <flux:button x-on:click="$flux.modal('create').close()" variant="ghost">
+                        Cancel
+                    </flux:button>
+
                     <flux:button type="submit" variant="primary">
                         Create
                     </flux:button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </flux:modal>
 
     <!-- Edit Modals -->
     @foreach ($users as $user)
         <flux:modal :name="'edit-'.$user->id" class="md:w-96">
-            <form wire:submit="updateUser({{ $user->id }})">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">Edit User</flux:heading>
-                        <flux:text class="mt-2">Update user information.</flux:text>
-                    </div>
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">Edit User</flux:heading>
+                    <flux:text class="mt-2">Update user information.</flux:text>
+                </div>
+
+                <form wire:submit="updateUser({{ $user->id }})">
 
                     <div class="space-y-4">
                         <flux:field>
@@ -306,12 +312,16 @@
                     <div class="flex gap-2">
                         <flux:spacer />
 
+                        <flux:button x-on:click="$flux.modal('edit-{{ $user->id }}').close()" variant="ghost">
+                            Cancel
+                        </flux:button>
+
                         <flux:button type="submit" variant="primary">
                             Update
                         </flux:button>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </flux:modal>
     @endforeach
 
@@ -328,9 +338,9 @@
                 </div>
                 <div class="flex gap-2">
                     <flux:spacer />
-                    <flux:modal.close>
-                        <flux:button variant="ghost">Cancel</flux:button>
-                    </flux:modal.close>
+                    <flux:button x-on:click="$flux.modal('delete-{{ $user->id }}').close()" variant="ghost">
+                        Cancel
+                    </flux:button>
                     <flux:button wire:click="deleteUser({{ $user->id }})" variant="danger">
                         Delete
                     </flux:button>

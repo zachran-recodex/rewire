@@ -116,6 +116,16 @@ class ManageUsers extends Component
         session()->flash('message_timestamp', microtime(true));
     }
 
+    public function closeModal(string $modalName = ''): void
+    {
+        if ($modalName) {
+            $this->modal($modalName)->close();
+        }
+        
+        // Dispatch JavaScript event as fallback
+        $this->dispatch('modal-close', name: $modalName);
+    }
+
     private function resetForm(): void
     {
         $this->name = '';
