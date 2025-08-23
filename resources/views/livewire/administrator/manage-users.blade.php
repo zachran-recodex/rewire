@@ -181,9 +181,9 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:modal.close>
-                        <flux:button variant="ghost">Close</flux:button>
-                    </flux:modal.close>
+                    <flux:button variant="ghost" x-on:click="$flux.modal('show-{{ $user->id }}').close()">
+                        Close
+                    </flux:button>
                 </div>
             </div>
         </flux:modal>
@@ -242,9 +242,9 @@
                 <div class="flex gap-2 mt-6">
                     <flux:spacer />
 
-                    <flux:modal.close>
-                        <flux:button variant="ghost">Cancel</flux:button>
-                    </flux:modal.close>
+                    <flux:button variant="ghost" wire:click="$set('showCreateModal', false)">
+                        Cancel
+                    </flux:button>
 
                     <flux:button type="submit" variant="primary">
                         Create
@@ -308,9 +308,9 @@
                     <div class="flex gap-2 mt-6">
                         <flux:spacer />
 
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
+                        <flux:button variant="ghost" wire:click="$set('showEditModal', false)">
+                            Cancel
+                        </flux:button>
 
                         <flux:button type="submit" variant="primary">
                             Update
@@ -335,9 +335,9 @@
                     </div>
                     <div class="flex gap-2">
                         <flux:spacer />
-                        <flux:modal.close>
-                            <flux:button variant="ghost">Cancel</flux:button>
-                        </flux:modal.close>
+                        <flux:button variant="ghost" x-on:click="$flux.modal('delete-{{ $user->id }}').close()">
+                            Cancel
+                        </flux:button>
                         <flux:button wire:click="delete({{ $user->id }})" variant="danger">
                             Delete
                         </flux:button>

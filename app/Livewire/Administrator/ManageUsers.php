@@ -28,6 +28,23 @@ class ManageUsers extends Component
 
     public bool $showCreateModal = false;
 
+    public function updatedShowCreateModal($value): void
+    {
+        if ($value) {
+            // Reset form when opening create modal
+            $this->form->reset();
+        }
+    }
+
+    public function updatedShowEditModal($value): void
+    {
+        if (!$value) {
+            // Reset form and editing state when closing edit modal
+            $this->editing = null;
+            $this->form->reset();
+        }
+    }
+
     public function create(): void
     {
         $user = $this->form->store();
