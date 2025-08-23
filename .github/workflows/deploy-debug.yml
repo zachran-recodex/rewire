@@ -10,7 +10,7 @@ jobs:
   debug-ssh:
     runs-on: ubuntu-latest
     environment: Production
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,11 +19,11 @@ jobs:
         run: |
           echo "=== GitHub Secrets Debug ==="
           echo "VPS_HOST length: ${#VPS_HOST}"
-          echo "VPS_USERNAME length: ${#VPS_USERNAME}" 
+          echo "VPS_USERNAME length: ${#VPS_USERNAME}"
           echo "VPS_PORT: $VPS_PORT"
           echo "VPS_SSH_KEY length: ${#VPS_SSH_KEY}"
           echo "VPS_PATH length: ${#VPS_PATH}"
-          
+
           # Check if secrets are actually set
           [ -n "$VPS_HOST" ] && echo "✅ VPS_HOST is set" || echo "❌ VPS_HOST is empty"
           [ -n "$VPS_USERNAME" ] && echo "✅ VPS_USERNAME is set" || echo "❌ VPS_USERNAME is empty"
@@ -39,11 +39,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
+
           # Write SSH key directly from GitHub Secret
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          
+
           # Debug SSH key format
           echo "=== SSH Key Debug Info ==="
           echo "File exists: $(test -f ~/.ssh/id_rsa && echo 'YES' || echo 'NO')"
@@ -53,18 +53,18 @@ jobs:
           echo "Last line: $(tail -n 1 ~/.ssh/id_rsa)"
           echo "Line count: $(wc -l < ~/.ssh/id_rsa)"
           echo "File permissions: $(ls -l ~/.ssh/id_rsa)"
-          
-          # Test SSH key validity  
+
+          # Test SSH key validity
           echo "=== SSH Key Validation ==="
           ssh-keygen -l -f ~/.ssh/id_rsa && echo "✅ SSH key is valid" || echo "❌ SSH key format issue"
-          
+
           # Check if key has passphrase
           ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null && echo "✅ Key can generate public key" || echo "❌ Key may have passphrase or be invalid"
-          
+
           # Add known hosts
           echo "=== Adding known hosts ==="
           ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null && echo "✅ Host key added" || echo "⚠️ Could not add host key"
-          
+
           # Create SSH config for easier connection
           cat > ~/.ssh/config << 'EOF'
           Host vps-server
@@ -80,7 +80,7 @@ jobs:
             LogLevel DEBUG3
           EOF
           chmod 600 ~/.ssh/config
-          
+
           echo "=== SSH Config Created ==="
           cat ~/.ssh/config
 
@@ -89,10 +89,10 @@ jobs:
         run: |
           echo "=== Generating Public Key from Private Key ==="
           ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub || echo "Failed to generate public key"
-          
+
           echo "=== Local Public Key (from private key) ==="
           cat ~/.ssh/id_rsa.pub || echo "No public key generated"
-          
+
           echo "=== Public Key Fingerprint ==="
           ssh-keygen -l -f ~/.ssh/id_rsa.pub || echo "Cannot generate fingerprint"
 
@@ -101,19 +101,19 @@ jobs:
         run: |
           echo "=== Testing SSH Connection (Method 1 - Basic) ==="
           timeout 30 ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'echo "SSH SUCCESS"; whoami; pwd' || echo "❌ Method 1 failed"
-          
+
       - name: Test SSH Connection - Method 2 (Verbose Debug)
         continue-on-error: true
         run: |
           echo "=== Testing SSH Connection (Method 2 - Debug Mode) ==="
           timeout 30 ssh -vvv -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} 'echo "SSH DEBUG SUCCESS"' 2>&1 | head -50 || echo "❌ Method 2 failed"
-          
+
       - name: Test SSH Connection - Method 3 (Config File)
-        continue-on-error: true  
+        continue-on-error: true
         run: |
           echo "=== Testing SSH Connection (Method 3 - Config File) ==="
           timeout 30 ssh -o BatchMode=yes -F ~/.ssh/config vps-server 'echo "SSH CONFIG SUCCESS"; whoami; pwd; date' || echo "❌ Method 3 failed"
-          
+
       - name: Test SSH Connection - Method 4 (Alternative Key)
         continue-on-error: true
         run: |
@@ -127,7 +127,7 @@ jobs:
         run: |
           echo "=== Final SSH Test ==="
           echo "Trying to connect and verify server details..."
-          
+
           # Try each successful connection method
           for method in "ssh -i ~/.ssh/id_rsa" "ssh -F ~/.ssh/config vps-server"; do
             echo "Attempting: $method"
@@ -148,24 +148,24 @@ jobs:
           ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 -i ~/.ssh/id_rsa -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} '
             echo "=== System Info ==="
             uname -a
-            
+
             echo "=== User Info ==="
             whoami
             id
-            
+
             echo "=== Application Path ==="
             ls -la ${{ secrets.VPS_PATH }}
-            
+
             echo "=== Git Status ==="
             cd ${{ secrets.VPS_PATH }}
             git remote -v
             git branch -a
             git status
-            
+
             echo "=== PHP/Composer Version ==="
             php --version
             composer --version
-            
+
             echo "=== Node/NPM Version ==="
             node --version
             npm --version
@@ -175,7 +175,7 @@ jobs:
     needs: debug-ssh
     runs-on: ubuntu-latest
     environment: Production
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -192,14 +192,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} '
             set -e
             echo "🚀 Starting deployment..."
-            
+
             cd ${{ secrets.VPS_PATH }}
-            
+
             # Check and fix permissions first
             echo "🔐 Checking and fixing permissions..."
             sudo chown -R $USER:$USER .
             chmod u+w . .env 2>/dev/null || true
-            
+
             # Backup environment
             echo "💾 Backing up environment..."
             if [ -f .env ]; then
@@ -209,17 +209,17 @@ jobs:
               echo "⚠️  No .env file found, creating from .env.example"
               cp .env.example .env || echo "No .env.example found"
             fi
-            
-            # Pull latest changes  
+
+            # Pull latest changes
             echo "⬇️ Pulling latest changes..."
             git fetch origin
             git reset --hard origin/deploy
-            
+
             # Install dependencies
             echo "📦 Installing dependencies..."
             composer install --optimize-autoloader --no-dev --no-interaction
             npm ci && npm run build
-            
+
             # Restore environment
             echo "🔧 Restoring environment..."
             if [ -f .env.backup ]; then
@@ -228,19 +228,7 @@ jobs:
             else
               echo "⚠️  No backup found, keeping current .env"
             fi
-            
-            # Create deployment info file
-            echo "📝 Creating deployment info..."
-            echo '{' > deployment.json
-            echo "  \"deployed_at\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> deployment.json
-            echo "  \"commit_hash\": \"$(git rev-parse HEAD)\"," >> deployment.json
-            echo "  \"commit_short\": \"$(git rev-parse --short HEAD)\"," >> deployment.json
-            echo "  \"branch\": \"$(git rev-parse --abbrev-ref HEAD)\"," >> deployment.json
-            echo "  \"tag\": \"$(git describe --tags --exact-match 2>/dev/null || echo 'none')\"," >> deployment.json
-            echo "  \"deployed_by\": \"GitHub Actions\"," >> deployment.json
-            echo "  \"environment\": \"debug\"" >> deployment.json
-            echo '}' >> deployment.json
-            
+
             # Set proper permissions before Laravel operations
             echo "🔐 Setting proper permissions for Laravel operations..."
             # 1. Set user ownership first for all deployment operations
@@ -257,18 +245,18 @@ jobs:
             php artisan db:seed --force --class=RolesSeeder
             php artisan optimize
             php artisan queue:restart
-            
+
             # Set final web server permissions
             echo "🔐 Setting final web server permissions..."
             # Set web server ownership for Laravel writable directories
             sudo chown -R www-data:www-data storage bootstrap/cache
             # Ensure web server can write
             sudo chmod -R 775 storage bootstrap/cache
-            
+
             # Cleanup
             echo "🧹 Cleaning up..."
             rm -f .env.backup
-            
+
             echo "✅ Deployment completed successfully!"
           '
 
