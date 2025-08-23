@@ -47,7 +47,7 @@ class ManageUsers extends Component
 
         $this->form->update();
 
-        $this->modal('edit-'.$this->editing->id)->close();
+        $this->dispatch('close-modal', 'edit-'.$this->editing->id);
         $this->editing = null;
         session()->flash('message', 'User updated successfully.');
         session()->flash('message_timestamp', microtime(true));
