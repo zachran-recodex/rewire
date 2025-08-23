@@ -19,11 +19,9 @@
             </flux:breadcrumbs>
         </div>
 
-        <flux:modal.trigger name="create">
-            <flux:button variant="primary" icon="plus">
-                Create
-            </flux:button>
-        </flux:modal.trigger>
+        <flux:button variant="primary" icon="plus" wire:click="$set('showCreateModal', true)">
+            Create
+        </flux:button>
     </div>
 
     <!-- Search -->
@@ -183,16 +181,16 @@
                 </div>
 
                 <div class="flex justify-end">
-                    <flux:button x-on:click="$flux.modal('show-{{ $user->id }}').close()" variant="ghost">
-                        Close
-                    </flux:button>
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Close</flux:button>
+                    </flux:modal.close>
                 </div>
             </div>
         </flux:modal>
     @endforeach
 
     <!-- Create Modal -->
-    <flux:modal name="create" class="md:w-96">
+    <flux:modal wire:model.self="showCreateModal" class="md:w-96">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Create New User</flux:heading>
@@ -244,9 +242,9 @@
                 <div class="flex gap-2 mt-6">
                     <flux:spacer />
 
-                    <flux:button x-on:click="$flux.modal('create').close()" variant="ghost">
-                        Cancel
-                    </flux:button>
+                    <flux:modal.close>
+                        <flux:button variant="ghost">Cancel</flux:button>
+                    </flux:modal.close>
 
                     <flux:button type="submit" variant="primary">
                         Create
@@ -337,9 +335,9 @@
                     </div>
                     <div class="flex gap-2">
                         <flux:spacer />
-                        <flux:button x-on:click="$flux.modal('delete-{{ $user->id }}').close()" variant="ghost">
-                            Cancel
-                        </flux:button>
+                        <flux:modal.close>
+                            <flux:button variant="ghost">Cancel</flux:button>
+                        </flux:modal.close>
                         <flux:button wire:click="delete({{ $user->id }})" variant="danger">
                             Delete
                         </flux:button>

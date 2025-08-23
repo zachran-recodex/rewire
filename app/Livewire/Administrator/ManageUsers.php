@@ -26,11 +26,13 @@ class ManageUsers extends Component
         $this->resetPage();
     }
 
+    public bool $showCreateModal = false;
+
     public function create(): void
     {
         $user = $this->form->store();
 
-        $this->modal('create')->close();
+        $this->showCreateModal = false;
         session()->flash('message', 'User created successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
@@ -61,25 +63,10 @@ class ManageUsers extends Component
         $this->authorize('delete', $user);
 
         $user->delete();
-        $this->modal('delete-'.$user->id)->close();
         session()->flash('message', 'User deleted successfully.');
         session()->flash('message_timestamp', microtime(true));
     }
 
-    public function closeModal(string $modalName = ''): void
-    {
-        if ($modalName) {
-            $this->modal($modalName)->close();
-        }
-
-        // Reset editing state when closing modals
-        if ($this->editing) {
-            $this->editing = null;
-            $this->form->reset();
-        }
-
-        $this->dispatch('modal-close', name: $modalName);
-    }
 
     #[Computed]
     public function users()
