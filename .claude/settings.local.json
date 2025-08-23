@@ -28,7 +28,9 @@
       "Bash(composer validate:*)",
       "Bash(composer update:*)",
       "Bash(vendor/bin/pest:*)",
-      "Bash(composer install:*)"
+      "Bash(composer install:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

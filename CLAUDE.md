@@ -83,10 +83,12 @@ npm run build  # Production build
 - **Icons**: Custom Flux icons in `resources/views/flux/icon/`
 
 ## Laravel 12 Specific Notes
-- **No Kernel.php**: Middleware registration in `bootstrap/app.php`
-- **Streamlined Structure**: Service providers in `bootstrap/providers.php`
-- **Modern Routing**: Health check endpoint at `/up`
+- **Streamlined Bootstrap**: Middleware registration in `bootstrap/app.php` with role/permission aliases
+- **Service Providers**: Custom providers in `bootstrap/providers.php` including VoltServiceProvider
+- **Modern Routing**: Health check endpoint at `/up`, Livewire integration, admin routes with role middleware
 - **Auto-discovery**: Console commands auto-register from `app/Console/Commands/`
+- **Database Configuration**: Support for both SQLite (development) and MySQL (production)
+- **Asset Management**: Vite integration with Tailwind CSS 4.0 and concurrency support
 
 ## MCP Integration
 - **Laravel Boost MCP Server**: Configured in `.mcp.json` with `php artisan boost:mcp`
@@ -110,14 +112,16 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.2.27
-- laravel/framework (LARAVEL) - v12
-- laravel/prompts (PROMPTS) - v0
-- livewire/flux (FLUXUI_FREE) - v2
-- livewire/livewire (LIVEWIRE) - v3
-- livewire/volt (VOLT) - v1
-- laravel/pint (PINT) - v1
-- pestphp/pest (PEST) - v3
-- tailwindcss (TAILWINDCSS) - v4
+- laravel/framework (LARAVEL) - v12.25.0
+- laravel/prompts (PROMPTS) - v0.3.6
+- laravel/boost (BOOST) - v1.0
+- livewire/flux (FLUXUI_FREE) - v2.2.5
+- livewire/livewire (LIVEWIRE) - v3.6.4
+- livewire/volt (VOLT) - v1.7.2
+- laravel/pint (PINT) - v1.24.0
+- pestphp/pest (PEST) - v3.8.4
+- tailwindcss (TAILWINDCSS) - v4.0.7
+- spatie/laravel-permission - v6.21
 
 
 ## Conventions
