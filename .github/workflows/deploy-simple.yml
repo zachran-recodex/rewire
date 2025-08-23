@@ -1,0 +1,63 @@
+name: Deploy Simple
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Production
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          timeout: 300s
+          script: |
+            set -e
+            echo "🚀 Starting simple deployment test..."
+            
+            cd ${{ secrets.VPS_PATH }}
+            pwd
+            
+            # Pull latest changes
+            echo "⬇️ Pulling latest changes..."
+            git fetch origin
+            git reset --hard origin/deploy
+            
+            # Create deployment info file with debug
+            echo "📝 Creating deployment info..."
+            echo "Current date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "Current commit: $(git rev-parse HEAD)"
+            echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+            
+            # Create the deployment.json file
+            cat > deployment.json << DEPLOYEOF
+{
+    "deployed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+    "commit_hash": "$(git rev-parse HEAD)",
+    "commit_short": "$(git rev-parse --short HEAD)",
+    "branch": "$(git rev-parse --abbrev-ref HEAD)",
+    "tag": "$(git describe --tags --exact-match 2>/dev/null || echo 'none')",
+    "deployed_by": "GitHub Actions Simple",
+    "environment": "production"
+}
+DEPLOYEOF
+            
+            echo "📋 Checking deployment.json was created..."
+            if [ -f deployment.json ]; then
+              echo "✅ deployment.json exists"
+              echo "Content:"
+              cat deployment.json
+            else
+              echo "❌ deployment.json was not created"
+            fi
+            
+            echo "✅ Simple deployment test completed!"
