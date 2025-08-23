@@ -39,17 +39,16 @@ jobs:
             echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
             
             # Create the deployment.json file
-            cat > deployment.json << DEPLOYEOF
-            {
-                "deployed_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-                "commit_hash": "$(git rev-parse HEAD)",
-                "commit_short": "$(git rev-parse --short HEAD)",
-                "branch": "$(git rev-parse --abbrev-ref HEAD)",
-                "tag": "$(git describe --tags --exact-match 2>/dev/null || echo 'none')",
-                "deployed_by": "GitHub Actions Simple",
-                "environment": "production"
-            }
-            DEPLOYEOF
+            echo "Creating deployment.json..."
+            echo '{' > deployment.json
+            echo "  \"deployed_at\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> deployment.json
+            echo "  \"commit_hash\": \"$(git rev-parse HEAD)\"," >> deployment.json
+            echo "  \"commit_short\": \"$(git rev-parse --short HEAD)\"," >> deployment.json
+            echo "  \"branch\": \"$(git rev-parse --abbrev-ref HEAD)\"," >> deployment.json
+            echo "  \"tag\": \"$(git describe --tags --exact-match 2>/dev/null || echo 'none')\"," >> deployment.json
+            echo "  \"deployed_by\": \"GitHub Actions Simple\"," >> deployment.json
+            echo "  \"environment\": \"production\"" >> deployment.json
+            echo '}' >> deployment.json
             
             echo "📋 Checking deployment.json was created..."
             if [ -f deployment.json ]; then
