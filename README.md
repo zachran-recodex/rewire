@@ -5,10 +5,8 @@
 [![Flux UI](https://img.shields.io/badge/Flux_UI-2.2-blueviolet)](https://fluxui.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-blue)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://github.com/zachran-recodex/rewire/actions/workflows/tests.yml/badge.svg)](https://github.com/zachran-recodex/rewire/actions)
 
-A modern open-source **Laravel + Livewire template** built with **Flux UI** and enhanced with **AI/MCP development capabilities**.  
-Rewire provides a production-ready foundation for building interactive web applications with **complete authentication system**, **advanced role-based access control**, **user management**, and **beautiful UI components** out of the box.
+**Rewire** is a modern Laravel starter template that demonstrates best practices for building interactive web applications. It combines Laravel 12's latest features with Livewire 3, Flux UI components, and modern development workflows to provide a solid foundation for user management systems.
 
 ---
 
@@ -22,31 +20,22 @@ Rewire provides a production-ready foundation for building interactive web appli
 
 ### Core Application
 - **Complete Authentication System**: Registration, login, password reset, email verification
-- **Advanced User Management**: Full profiles with avatar uploads, bio, location, website, birth date
-- **Role-Based Access Control**: Super-admin, admin, and user roles with comprehensive policy system
-- **Administrator Dashboard**: Full user management with create, edit, delete, and role assignment
-- **Modern UI**: Responsive Flux UI components with dark mode support
-- **Real-time Interactivity**: Livewire 3.x + Volt for single-file components
-- **Settings Management**: Separate modules for profile, password, appearance, and account deletion
-- **User Status Management**: Active/inactive user system with middleware protection
+- **User Management**: Profile management with avatar uploads, personal information, and settings
+- **Role-Based Access Control**: Three-tier system (super-admin, admin, user) with policy-based authorization
+- **Administrator Panel**: User management interface for administrators
+- **Modern UI**: Responsive interface built with Flux UI components
+- **Real-time Interactivity**: Livewire components with reactive updates
+- **Settings System**: Modular settings for profile, password, and appearance
 
 ### Technical Stack
-- **Laravel 12.25** - Latest framework with streamlined structure
-- **Livewire 3.6** - Full-stack reactive components
-- **Volt 1.7** - Single-file component architecture
-- **Flux UI 2.2** - Modern component library (Free edition)
-- **Tailwind CSS 4.0** - Modern utility-first CSS framework
-- **Pest 3.8** - Modern testing framework with comprehensive test coverage
-- **Spatie Laravel Permission 6.21** - Role and permission management
+- **Laravel 12.x** - Latest framework with modern PHP 8.2+ features
+- **Livewire 3.x** - Full-stack reactive components
+- **Livewire Volt 1.7.x** - Single-file component architecture
+- **Flux UI 2.x** - Modern component library (Free edition)
+- **Tailwind CSS 4.x** - Utility-first CSS framework
+- **Pest 3.x** - Modern testing framework
+- **Spatie Laravel Permission** - Role and permission management
 - **SQLite/MySQL** - Flexible database support
-
-### AI & MCP Integration 🤖
-- **Laravel Boost MCP Server 1.0** - Full integration with development workflow
-- **Claude Code Integration** - AI-assisted development and debugging
-- **Smart Code Generation** - Automated component scaffolding
-- **Intelligent Testing & Debugging** - AI-powered test generation and error analysis
-- **Context-aware Documentation** - Dynamic documentation search and generation
-- **Browser Log Integration** - Frontend debugging through MCP tools
 
 ---
 
@@ -114,137 +103,95 @@ vendor/bin/pint
 
 ---
 
-## 📁 Project Structure
+## 📁 Key Components
 
-```
-rewire/
-├── app/
-│   ├── Http/
-│   │   ├── Controllers/Auth/
-│   │   └── Middleware/EnsureUserIsActive.php
-│   ├── Livewire/
-│   │   ├── Actions/Logout.php
-│   │   ├── Administrator/ManageUsers.php
-│   │   └── Forms/UserForm.php
-│   ├── Models/User.php
-│   ├── Policies/UserPolicy.php
-│   └── Providers/
-├── database/
-│   ├── factories/UserFactory.php
-│   ├── migrations/
-│   │   ├── create_users_table.php
-│   │   ├── create_permission_tables.php
-│   │   ├── create_jobs_table.php
-│   │   └── create_cache_table.php
-│   └── seeders/
-│       ├── RolesSeeder.php
-│       └── UserSeeder.php
-├── resources/views/
-│   ├── components/layouts/
-│   ├── livewire/
-│   │   ├── auth/ (login, register, etc.)
-│   │   ├── settings/ (profile, password, appearance)
-│   │   └── administrator/
-│   └── flux/ (custom Flux components)
-├── routes/
-│   ├── web.php (main routes + admin)
-│   ├── auth.php
-│   └── console.php
-├── tests/
-│   ├── Feature/
-│   │   ├── Auth/
-│   │   ├── Settings/
-│   │   ├── ManageUsersTest.php
-│   │   └── Seeders/
-│   └── Unit/
-└── .mcp.json
-```
+### Application Structure
+- **Authentication System**: Complete auth flow with Laravel Breeze-style components
+- **User Management**: CRUD operations with role-based permissions
+- **Settings System**: Modular Volt components for user preferences
+- **Admin Panel**: Administrator interface for user management
+
+### File Organization
+- `app/Livewire/` - Livewire components and forms
+- `resources/views/livewire/` - Volt components for settings
+- `database/seeders/` - Role and user seeders
+- `tests/Feature/` - Comprehensive feature tests
 
 ---
 
-## 🎨 UI Components & Features
+## 🎨 User Interface
 
-### Flux UI Components
-- Complete component library: `avatar`, `badge`, `button`, `callout`, `checkbox`, `dropdown`, `field`, `heading`, `input`, `modal`, `navbar`, `profile`, `radio`, `select`, `separator`, `switch`, `text`, `textarea`, `tooltip`
-- Custom icons: `layout-grid`, `folder-git-2`, `chevrons-up-down`, `book-open-text`, `panel-left`
-- Dark mode support throughout
-
-### Application Features
-- **Dashboard**: Clean interface with sidebar navigation
-- **Authentication Forms**: Complete auth flow with modern styling
-- **Settings Pages**: Modular Volt components for profile, password, appearance
-- **User Management**: Full CRUD interface for administrators
+### Design System
+- **Flux UI Components**: Modern component library with consistent styling
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Loading States**: Wire loading indicators and transitions
-- **Toast Notifications**: Success/error messaging system
+- **Dark Mode**: Complete dark/light theme support
+- **Interactive Elements**: Real-time updates with Livewire
+
+### Key Features
+- Clean dashboard with sidebar navigation
+- Modern authentication forms
+- Settings management interface
+- Administrator user management panel
+- Loading states and notifications
 
 ---
 
-## 🔐 Authentication & Authorization Features
+## 🔐 Authentication & Authorization
 
-### Authentication Routes
-- **Registration** (`/register`) - User signup with validation
-- **Login** (`/login`) - Secure authentication
-- **Password Reset** (`/forgot-password`, `/reset-password/{token}`) - Complete reset flow
-- **Email Verification** (`/verify-email`, `/verify-email/{id}/{hash}`) - Email confirmation
-- **Password Confirmation** (`/confirm-password`) - Sensitive action protection
-- **Logout** - Secure session termination
+### Authentication System
+- Complete auth flow: registration, login, password reset, email verification
+- Secure password confirmation for sensitive actions
+- Session management and logout functionality
 
-### User Management
-- **Profile Management** (`/dashboard/settings/profile`) - Name, username, email, bio, location, website, birth date, avatar upload
-- **Password Management** (`/dashboard/settings/password`) - Secure password updates
-- **Appearance Settings** (`/dashboard/settings/appearance`) - UI preferences
-- **Account Deletion** - Self-service account removal with confirmation
+### User Features
+- Profile management with avatar uploads
+- Personal information and preferences
+- Password updates and security settings
+- Account deletion with confirmation
 
-### Role-Based Access Control
-- **Three-tier Role System**: super-admin, admin, user
-- **Policy-based Authorization**: Comprehensive UserPolicy with granular permissions
-- **Middleware Protection**: Custom `active` middleware for user status
-- **Administrator Panel** (`/dashboard/administrator/manage-users`) - Full user management for admins
-- **Role Assignment**: Dynamic role management through admin interface
+### Access Control
+- Three-tier role system: super-admin, admin, user
+- Policy-based authorization with UserPolicy
+- Custom middleware for user status management
+- Admin panel for user management and role assignment
 
 ---
 
-## 🤖 AI & MCP Features
+## ⚙️ Development Features
 
-### Laravel Boost MCP Server
-- **Server Command**: `php artisan boost:mcp`
-- **Database Integration**: Schema inspection, query execution, connection management
-- **Documentation Search**: Version-specific package documentation with semantic search
-- **Debug Tools**: Error logs, browser logs, tinker execution
-- **Application Info**: Package versions, model discovery, route inspection
-- **Configuration Access**: Real-time config value retrieval
+### Testing & Quality
+- Comprehensive test suite with Pest framework
+- Code formatting with Laravel Pint
+- GitHub Actions workflows for CI/CD
+- Zero-downtime deployment setup
 
-### Development Workflow
-- **AI-powered Components**: Automated Livewire/Volt component generation
-- **Intelligent Testing**: AI-assisted test creation and debugging
-- **Code Quality**: Integration with Pint formatter and Pest testing
-- **Documentation Generation**: Context-aware documentation updates
-- **Browser Debugging**: Frontend error tracking and analysis
+### Developer Experience
+- Modern Laravel 12 structure
+- Volt single-file components
+- Hot reload with Vite
+- Database seeders for quick setup
 
 ---
 
-## 📚 Development Guidelines
+## 📚 Architecture Highlights
 
-### Code Standards
-- **PSR-12** compliance with Laravel Pint formatting
-- **Type Declarations**: Explicit return types and parameter typing
-- **Constructor Promotion**: PHP 8.2+ property promotion patterns
-- **Modern PHP**: Leveraging PHP 8.2+ features throughout
+### Code Quality
+- PSR-12 compliance with automated formatting
+- Modern PHP 8.2+ features throughout
+- Type declarations and constructor promotion
+- Comprehensive test coverage
 
-### Laravel Best Practices
-- **Form Requests**: Dedicated validation classes (UserForm)
-- **Policies**: Comprehensive authorization logic (UserPolicy)
-- **Eloquent Relationships**: Proper ORM usage with eager loading
-- **Database Seeders**: Environment-aware seeding with RolesSeeder/UserSeeder
-- **Middleware**: Custom middleware for business logic (EnsureUserIsActive)
+### Laravel Patterns
+- Policy-based authorization
+- Form request validation
+- Eloquent relationships with eager loading
+- Custom middleware for business logic
 
-### Component Architecture
-- **Volt Components**: Single-file components for settings pages
-- **Class-based Livewire**: Complex components like ManageUsers
-- **Form Objects**: Dedicated form classes for data handling
-- **Layout Components**: Reusable layout patterns
-- **Testing**: Comprehensive test coverage with Pest framework
+### Component Design
+- Volt single-file components for simple features
+- Class-based Livewire for complex interactions
+- Reusable form objects and layouts
+- Modular settings system
 
 ---
 
@@ -255,42 +202,19 @@ rewire/
 composer install --optimize-autoloader --no-dev
 npm run build
 php artisan optimize
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
 ```
 
 ### Environment Configuration
-Ensure `.env` contains:
+Configure your `.env` file for production:
 
 ```env
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://rewire.web.id
-
-# Database
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_DATABASE=rewire
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-
-# Admin Credentials (for seeding)
-ADMIN_NAME="Administrator"
-ADMIN_USERNAME="admin"
-ADMIN_EMAIL="admin@rewire.web.id"
-ADMIN_PASSWORD="secure_password_here"
-
-# Mail Configuration
-MAIL_MAILER=smtp
-MAIL_FROM_ADDRESS="hello@rewire.web.id"
-MAIL_FROM_NAME="Rewire"
-
-# Session & Security
-SESSION_DOMAIN=rewire.web.id
-SESSION_SECURE_COOKIE=true
-BCRYPT_ROUNDS=12
+# ... other production settings
 ```
+
+See the included `.env.example` for all available configuration options.
 
 ### Database Setup
 ```bash
@@ -302,13 +226,13 @@ php artisan db:seed --force
 
 ## 🤝 Contributing
 
-1. Fork the repo
+1. Fork the repository
 2. Create a feature branch
-3. Write tests
-4. Run Pint formatter
-5. Submit PR
+3. Write tests for new features
+4. Run code quality checks
+5. Submit a pull request
 
-We welcome **AI-assisted contributions** — just document where AI was used.
+Please follow the existing code style and include tests for new functionality.
 
 ---
 
@@ -318,15 +242,12 @@ This project is open-sourced software licensed under the [MIT license](LICENSE).
 
 ---
 
-## 🔗 Links
+## 🔗 Resources
 
-* **Repository**: [Rewire GitHub](https://github.com/zachran-recodex/rewire)
-* **Laravel Docs**: [laravel.com/docs](https://laravel.com/docs)
-* **Livewire Docs**: [livewire.laravel.com](https://livewire.laravel.com)
-* **Flux UI Docs**: [fluxui.dev](https://fluxui.dev)
-* **Claude Code Docs**: [claude docs](https://docs.anthropic.com/claude/docs/claude-code)
+- **Documentation**: [Laravel](https://laravel.com/docs) • [Livewire](https://livewire.laravel.com) • [Flux UI](https://fluxui.dev)
+- **Repository**: [GitHub](https://github.com/zachran-recodex/rewire)
 
 ---
 
-**Built with ❤️ using Laravel, Livewire, Flux UI, and AI tools.**
-*Rewire is a modern Laravel starter template for developers who want speed, elegance, and AI-enhanced workflows.*
+**Built with Laravel, Livewire, and Flux UI**  
+*A modern starter template for interactive web applications*
