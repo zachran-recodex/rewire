@@ -98,7 +98,6 @@ class ManageUsers extends Component
         $this->editing = null;
     }
 
-
     #[Computed]
     public function users()
     {
