@@ -35,8 +35,14 @@ ln -s "$SHARED_DIR/bootstrap_cache" "$RELEASE_DIR/bootstrap/cache"
 
 ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 
-echo "▶️ Optimizing application..."
+echo "▶️ Debug .env file..."
 cd "$RELEASE_DIR"
+echo "File exists: $(test -f .env && echo 'YES' || echo 'NO')"
+echo "File size: $(wc -c < .env 2>/dev/null || echo 'ERROR')"
+echo "First few lines:"
+head -5 .env 2>/dev/null || echo "Cannot read .env"
+
+echo "▶️ Optimizing application..."
 php artisan optimize:clear
 php artisan optimize
 php artisan storage:link

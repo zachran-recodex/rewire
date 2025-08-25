@@ -265,6 +265,18 @@ Add variable for .env production file:
 
 - **ENV_FILE**: The contents of your .env file
 
+**Important:** Ensure all environment variables with spaces or special characters are properly quoted:
+
+```env
+# ✅ Correct format
+APP_NAME="Your App Name"
+MAIL_FROM_NAME="Your Name"
+
+# ❌ Incorrect format (will cause deployment errors)
+APP_NAME=Your App Name
+MAIL_FROM_NAME=[Your Name]
+```
+
 ## 8. Set Up SSL with Let's Encrypt (Optional but Recommended)
 
 ```bash
