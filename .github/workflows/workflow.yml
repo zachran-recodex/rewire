@@ -139,6 +139,8 @@ jobs:
     name: 🚀 Deploy to Server
     needs: build
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: ${{ vars.APP_NAME }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
