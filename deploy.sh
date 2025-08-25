@@ -35,16 +35,17 @@ ln -s "$SHARED_DIR/bootstrap_cache" "$RELEASE_DIR/bootstrap/cache"
 
 ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 
-echo "▶️ Debug .env file..."
+echo "▶️ Fix .env file formatting..."
 cd "$RELEASE_DIR"
-echo "File exists: $(test -f .env && echo 'YES' || echo 'NO')"
-echo "File size: $(wc -c < .env 2>/dev/null || echo 'ERROR')"
-echo "Search for 'Zachran' lines:"
-grep -n "Zachran" .env 2>/dev/null || echo "No Zachran found"
-echo "Show lines with quotes:"
-grep -n '"' .env 2>/dev/null | head -10 || echo "No quotes found"
-echo "Show raw bytes around 'Zachran':"
-grep -ao "Zachran.*" .env | hexdump -C || echo "Cannot hexdump"
+
+# Convert CRLF to LF and fix missing quotes
+sed -i 's/\r$//' .env
+sed -i 's/^ADMIN_NAME=Zachran Razendra$/ADMIN_NAME="Zachran Razendra"/' .env
+sed -i 's/^MAIL_FROM_NAME=Rewire$/MAIL_FROM_NAME="Rewire"/' .env
+sed -i 's/^VITE_APP_NAME=Rewire$/VITE_APP_NAME="Rewire"/' .env
+
+echo "Fixed .env file:"
+grep -n "Zachran\|FROM_NAME\|VITE_APP" .env || echo "No matches"
 
 echo "▶️ Optimizing application..."
 php artisan optimize:clear
