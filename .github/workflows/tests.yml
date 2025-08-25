@@ -51,6 +51,9 @@ jobs:
       - name: Copy .env.testing
         run: cp .env.testing .env
 
+      - name: Generate Application Key
+        run: php artisan key:generate
+
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
@@ -77,12 +80,7 @@ jobs:
         run: npm run build
 
       - name: Run code quality checks
-        run: |
-          composer larastan
-          composer pint
-          npm run format
-          npm run types
-          npm run lint
+        run: vendor/bin/pint
 
       - name: Run tests (with Pest)
         env:

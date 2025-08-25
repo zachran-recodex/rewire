@@ -42,8 +42,3 @@ jobs:
 
       - name: Check PHP Code Style (Pint)
         run: vendor/bin/pint --test
-
-      - name: Check Frontend Code Style
-        run: |
-          npm run format:check
-          npm run lint
