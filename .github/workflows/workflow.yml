@@ -174,7 +174,7 @@ jobs:
 
       - name: Upload .env file to shared directory
         run: |
-          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/shared/.env
+          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/shared/.env
 
       - name: Run deploy script on server
         run: |
