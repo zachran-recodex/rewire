@@ -47,13 +47,13 @@ sed -i 's/^VITE_APP_NAME=Rewire$/VITE_APP_NAME="Rewire"/' .env
 echo "Fixed .env file:"
 grep -n "Zachran\|FROM_NAME\|VITE_APP" .env || echo "No matches"
 
+echo "▶️ Migrating database..."
+php artisan migrate --force
+
 echo "▶️ Optimizing application..."
 php artisan optimize:clear
 php artisan optimize
 php artisan storage:link
-
-echo "▶️ Migrating database..."
-php artisan migrate --force
 
 echo "▶️ Symlink current..."
 ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
