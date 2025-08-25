@@ -15,19 +15,19 @@ beforeEach(function () {
 it('can render manage users component', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
-    
+
     $this->actingAs($admin)
-         ->get('/dashboard/administrator/manage-users')
-         ->assertSuccessful()
-         ->assertSeeLivewire(ManageUsers::class);
+        ->get('/dashboard/administrator/manage-users')
+        ->assertSuccessful()
+        ->assertSeeLivewire(ManageUsers::class);
 });
 
 it('can create user with form object', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
-    
+
     $userRole = Role::where('name', 'user')->first();
-    
+
     Livewire::actingAs($admin)
         ->test(ManageUsers::class)
         ->set('form.name', 'Test User')
@@ -38,17 +38,17 @@ it('can create user with form object', function () {
         ->set('form.is_active', true)
         ->call('create')
         ->assertHasNoErrors();
-    
+
     expect(User::where('email', 'test@example.com')->exists())->toBeTrue();
 });
 
 it('can edit user with authorization', function () {
     $admin = User::factory()->create();
     $admin->assignRole('admin');
-    
+
     $user = User::factory()->create();
     $user->assignRole('user');
-    
+
     Livewire::actingAs($admin)
         ->test(ManageUsers::class)
         ->call('edit', $user->id)
@@ -59,10 +59,10 @@ it('can edit user with authorization', function () {
 it('prevents unauthorized user deletion', function () {
     $user = User::factory()->create();
     $user->assignRole('user');
-    
+
     $targetUser = User::factory()->create();
     $targetUser->assignRole('admin');
-    
+
     Livewire::actingAs($user)
         ->test(ManageUsers::class)
         ->call('delete', $targetUser->id)
@@ -72,12 +72,12 @@ it('prevents unauthorized user deletion', function () {
 it('shows only authorized action buttons', function () {
     $user = User::factory()->create();
     $user->assignRole('user');
-    
-    $admin = User::factory()->create();  
+
+    $admin = User::factory()->create();
     $admin->assignRole('admin');
-    
+
     $this->actingAs($user)
-         ->get('/dashboard/administrator/manage-users')
-         ->assertDontSee('wire:click="edit(' . $admin->id . ')"', false)
-         ->assertDontSee('wire:click="delete(' . $admin->id . ')"', false);
+        ->get('/dashboard/administrator/manage-users')
+        ->assertDontSee('wire:click="edit('.$admin->id.')"', false)
+        ->assertDontSee('wire:click="delete('.$admin->id.')"', false);
 });
