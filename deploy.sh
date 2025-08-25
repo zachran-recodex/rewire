@@ -43,12 +43,17 @@ php artisan optimize
 php artisan storage:link
 
 echo "▶️ Setting permissions..."
-chown -R $APP_USER:$APP_GROUP "$PROJECT_DIR"
-chmod -R 755 "$PROJECT_DIR"
-chmod -R 775 "$PROJECT_DIR/storage"
-chmod -R 775 "$PROJECT_DIR/bootstrap/cache"
+chown -R $APP_USER:$APP_GROUP "$PROJECT_DIR" || echo "Warning: Could not change ownership"
+chmod -R 755 "$PROJECT_DIR" || echo "Warning: Could not set directory permissions"
+chmod -R 775 "$PROJECT_DIR/storage" || echo "Warning: Could not set storage permissions"
+chmod -R 775 "$PROJECT_DIR/bootstrap/cache" || echo "Warning: Could not set cache permissions"
 
 echo "▶️ Cleaning up old backups (keeping last 3)..."
-ls -dt storage_backup_* 2>/dev/null | tail -n +4 | xargs -r rm -rf
+if ls storage_backup_* 1> /dev/null 2>&1; then
+    ls -dt storage_backup_* | tail -n +4 | xargs -r rm -rf
+    echo "Old backups cleaned up"
+else
+    echo "No old backups to clean up"
+fi
 
 echo "✅ Deployment completed successfully!"
