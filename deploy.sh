@@ -5,63 +5,50 @@ set -o pipefail
 
 APP_USER="deployer"
 APP_GROUP="www-data"
-APP_BASE="/home/$APP_USER/laravel"
-PROJECT_NAME="rewire.web.id"
-PROJECT_DIR="$APP_BASE/$PROJECT_NAME"
-RELEASES_DIR="$PROJECT_DIR/releases"
-SHARED_DIR="$PROJECT_DIR/shared"
-CURRENT_LINK="$PROJECT_DIR/current"
-NOW=$(date +%Y-%m-%d-%H%M%S)-$(openssl rand -hex 3)
-RELEASE_DIR="$RELEASES_DIR/$NOW"
+PROJECT_DIR="/home/$APP_USER/laravel/rewire.web.id"
 ARCHIVE_NAME="release.tar.gz"
 
-echo "▶️ Create directories..."
-mkdir -p "$RELEASES_DIR" "$SHARED_DIR/storage" "$SHARED_DIR/bootstrap_cache"
+echo "▶️ Starting deployment to $PROJECT_DIR"
 
-mkdir -p "$SHARED_DIR/storage/framework/views"
-mkdir -p "$SHARED_DIR/storage/framework/cache"
-mkdir -p "$SHARED_DIR/storage/framework/sessions"
-mkdir -p "$SHARED_DIR/storage/logs"
+cd "$PROJECT_DIR"
 
-echo "▶️ Unpacking release..."
-mkdir "$RELEASE_DIR"
-tar -xzf "$APP_BASE/$ARCHIVE_NAME" -C "$RELEASE_DIR"
-rm "$APP_BASE/$ARCHIVE_NAME"
+echo "▶️ Creating backup of current deployment..."
+if [ -d "storage" ]; then
+  cp -r storage storage_backup_$(date +%Y%m%d_%H%M%S)
+fi
 
-echo "▶️ Symlink storage..."
-rm -rf "$RELEASE_DIR/storage"
-ln -s "$SHARED_DIR/storage" "$RELEASE_DIR/storage"
+echo "▶️ Extracting new release..."
+tar -xzf "$ARCHIVE_NAME"
+rm "$ARCHIVE_NAME"
 
-rm -rf "$RELEASE_DIR/bootstrap/cache"
-ln -s "$SHARED_DIR/bootstrap_cache" "$RELEASE_DIR/bootstrap/cache"
+echo "▶️ Setting up storage directories..."
+mkdir -p storage/app/public
+mkdir -p storage/framework/cache
+mkdir -p storage/framework/sessions
+mkdir -p storage/framework/views
+mkdir -p storage/logs
+mkdir -p bootstrap/cache
 
-ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
-
-echo "▶️ Fix .env file formatting..."
-cd "$RELEASE_DIR"
-
+echo "▶️ Fixing .env file formatting..."
 # Convert CRLF to LF and fix missing quotes
 sed -i 's/\r$//' .env
 sed -i 's/^ADMIN_NAME=Zachran Razendra$/ADMIN_NAME="Zachran Razendra"/' .env
 sed -i 's/^MAIL_FROM_NAME=Rewire$/MAIL_FROM_NAME="Rewire"/' .env
 sed -i 's/^VITE_APP_NAME=Rewire$/VITE_APP_NAME="Rewire"/' .env
 
-echo "Fixed .env file:"
-grep -n "Zachran\|FROM_NAME\|VITE_APP" .env || echo "No matches"
-
-echo "▶️ Migrating database..."
+echo "▶️ Running Laravel commands..."
 php artisan migrate --force
-
-echo "▶️ Optimizing application..."
 php artisan optimize:clear
 php artisan optimize
 php artisan storage:link
 
-echo "▶️ Symlink current..."
-ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
+echo "▶️ Setting permissions..."
+chown -R $APP_USER:$APP_GROUP "$PROJECT_DIR"
+chmod -R 755 "$PROJECT_DIR"
+chmod -R 775 "$PROJECT_DIR/storage"
+chmod -R 775 "$PROJECT_DIR/bootstrap/cache"
 
-echo "▶️ Cleaning old releases..."
-cd "$RELEASES_DIR"
-ls -dt */ | tail -n +6 | xargs -r rm -rf
+echo "▶️ Cleaning up old backups (keeping last 3)..."
+ls -dt storage_backup_* 2>/dev/null | tail -n +4 | xargs -r rm -rf
 
-echo "✅ Deploy finished: $NOW"
+echo "✅ Deployment completed successfully!"

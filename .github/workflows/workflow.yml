@@ -170,12 +170,16 @@ jobs:
 
       - name: Upload release to server
         run: |
-          scp -vvv -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/
+          scp -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
 
-      - name: Upload .env file to shared directory
+      - name: Upload .env file
         run: |
-          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/shared/.env
+          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
+
+      - name: Upload deploy script
+        run: |
+          scp -P ${{ secrets.SSH_PORT }} deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
 
       - name: Run deploy script on server
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' < ./deploy.sh
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'cd /home/${{ secrets.SSH_USER }}/laravel/rewire.web.id && chmod +x deploy.sh && ./deploy.sh'
