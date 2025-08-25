@@ -3,57 +3,55 @@
 set -e
 set -o pipefail
 
-APP_USER="deployer"
+# Parameter for different applications (default: laravel)
+APP_NAME=${1:-"laravel"}  # First parameter or default to "laravel"
+APP_USER="zachranraze"
 APP_GROUP="www-data"
-PROJECT_DIR="/home/$APP_USER/laravel/rewire.web.id"
+APP_BASE="/home/$APP_USER/$APP_NAME"
+RELEASES_DIR="$APP_BASE/releases"
+SHARED_DIR="$APP_BASE/shared"
+CURRENT_LINK="$APP_BASE/current"
+NOW=$(date +%Y-%m-%d-%H%M%S)-$(openssl rand -hex 3)
+RELEASE_DIR="$RELEASES_DIR/$NOW"
 ARCHIVE_NAME="release.tar.gz"
 
-echo "▶️ Starting deployment to $PROJECT_DIR"
+echo "🚀 Deploying $APP_NAME..."
+echo "▶️ Create directories..."
+mkdir -p "$RELEASES_DIR" "$SHARED_DIR/storage" "$SHARED_DIR/bootstrap_cache"
 
-cd "$PROJECT_DIR"
+mkdir -p "$SHARED_DIR/storage/framework/views"
+mkdir -p "$SHARED_DIR/storage/framework/cache"
+mkdir -p "$SHARED_DIR/storage/framework/sessions"
+mkdir -p "$SHARED_DIR/storage/logs"
 
-echo "▶️ Creating backup of current deployment..."
-if [ -d "storage" ]; then
-  cp -r storage storage_backup_$(date +%Y%m%d_%H%M%S)
-fi
+echo "▶️ Unpacking release..."
+mkdir "$RELEASE_DIR"
+tar -xzf "$APP_BASE/$ARCHIVE_NAME" -C "$RELEASE_DIR"
+rm "$APP_BASE/$ARCHIVE_NAME"
 
-echo "▶️ Extracting new release..."
-tar -xzf "$ARCHIVE_NAME"
-rm "$ARCHIVE_NAME"
+echo "▶️ Symlink storage..."
+rm -rf "$RELEASE_DIR/storage"
+ln -s "$SHARED_DIR/storage" "$RELEASE_DIR/storage"
 
-echo "▶️ Setting up storage directories..."
-mkdir -p storage/app/public
-mkdir -p storage/framework/cache
-mkdir -p storage/framework/sessions
-mkdir -p storage/framework/views
-mkdir -p storage/logs
-mkdir -p bootstrap/cache
+rm -rf "$RELEASE_DIR/bootstrap/cache"
+ln -s "$SHARED_DIR/bootstrap_cache" "$RELEASE_DIR/bootstrap/cache"
 
-echo "▶️ Fixing .env file formatting..."
-# Convert CRLF to LF and fix missing quotes
-sed -i 's/\r$//' .env
-sed -i 's/^ADMIN_NAME=Zachran Razendra$/ADMIN_NAME="Zachran Razendra"/' .env
-sed -i 's/^MAIL_FROM_NAME=Rewire$/MAIL_FROM_NAME="Rewire"/' .env
-sed -i 's/^VITE_APP_NAME=Rewire$/VITE_APP_NAME="Rewire"/' .env
+ln -sf "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
 
-echo "▶️ Running Laravel commands..."
-php artisan migrate --force
+echo "▶️ Optimizing application..."
+cd "$RELEASE_DIR"
 php artisan optimize:clear
 php artisan optimize
 php artisan storage:link
 
-echo "▶️ Setting permissions..."
-chown -R $APP_USER:$APP_GROUP "$PROJECT_DIR" || echo "Warning: Could not change ownership"
-chmod -R 755 "$PROJECT_DIR" || echo "Warning: Could not set directory permissions"
-chmod -R 775 "$PROJECT_DIR/storage" || echo "Warning: Could not set storage permissions"
-chmod -R 775 "$PROJECT_DIR/bootstrap/cache" || echo "Warning: Could not set cache permissions"
+echo "▶️ Migrating database..."
+php artisan migrate --force
 
-echo "▶️ Cleaning up old backups (keeping last 3)..."
-if ls storage_backup_* 1> /dev/null 2>&1; then
-    ls -dt storage_backup_* | tail -n +4 | xargs -r rm -rf
-    echo "Old backups cleaned up"
-else
-    echo "No old backups to clean up"
-fi
+echo "▶️ Symlink current..."
+ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
 
-echo "✅ Deployment completed successfully!"
+echo "▶️ Cleaning old releases..."
+cd "$RELEASES_DIR"
+ls -dt */ | tail -n +6 | xargs -r rm -rf
+
+echo "✅ Deploy finished: $APP_NAME - $NOW"

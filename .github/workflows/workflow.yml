@@ -162,24 +162,15 @@ jobs:
       - name: Create .env file from GitHub Variables
         run: |
           echo "${{ vars.ENV_FILE }}" > .env
-          # Fix line endings and ensure proper quoting
-          sed -i 's/\r$//' .env
-          sed -i 's/^ADMIN_NAME=Zachran Razendra$/ADMIN_NAME="Zachran Razendra"/' .env
-          sed -i 's/^MAIL_FROM_NAME=Rewire$/MAIL_FROM_NAME="Rewire"/' .env
-          sed -i 's/^VITE_APP_NAME=Rewire$/VITE_APP_NAME="Rewire"/' .env
 
       - name: Upload release to server
         run: |
-          scp -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
+          scp -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/
 
-      - name: Upload .env file
+      - name: Upload .env file to shared directory
         run: |
-          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
-
-      - name: Upload deploy script
-        run: |
-          scp -P ${{ secrets.SSH_PORT }} deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/rewire.web.id/
+          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/shared/.env
 
       - name: Run deploy script on server
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'cd /home/${{ secrets.SSH_USER }}/laravel/rewire.web.id && chmod +x deploy.sh && ./deploy.sh'
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s ${{ env.APP_NAME }}' < ./deploy.sh
