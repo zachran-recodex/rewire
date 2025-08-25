@@ -37,7 +37,7 @@ composer run dev  # Runs Laravel server + queue worker + Vite dev server concurr
 php artisan test                                    # Run all tests
 php artisan test tests/Feature/Auth/LoginTest.php   # Run specific test file
 php artisan test --filter=authentication           # Filter tests by name
-composer test                                       # Run tests with coverage
+composer test                                       # Run tests with config:clear
 ```
 
 ### Code Quality
@@ -50,6 +50,14 @@ vendor/bin/pint           # Format all files
 ```bash
 npm run dev    # Development server with hot reload
 npm run build  # Production build
+```
+
+### Deployment
+```bash
+# Zero-downtime deployment is configured via GitHub Actions
+# Production workflow: .github/workflows/workflow.yml (triggers on deploy branch)
+# Test workflow: .github/workflows/tests.yml (triggers on main/develop)
+# Lint workflow: .github/workflows/lint.yml (triggers on PRs)
 ```
 
 ## Important Patterns
@@ -89,6 +97,13 @@ npm run build  # Production build
 - **Auto-discovery**: Console commands auto-register from `app/Console/Commands/`
 - **Database Configuration**: Support for both SQLite (development) and MySQL (production)
 - **Asset Management**: Vite integration with Tailwind CSS 4.0 and concurrency support
+
+## CI/CD Workflows
+- **Zero Downtime Deployment**: Production workflow in `.github/workflows/workflow.yml` (runs on `deploy` branch)
+- **Development Testing**: Comprehensive testing workflow in `.github/workflows/tests.yml` (runs on `main` and `develop`)
+- **Code Style Checks**: Pull request linting in `.github/workflows/lint.yml`
+- **Deployment Script**: `deploy.sh` for server deployment with symlink management
+- **Branch Strategy**: `deploy` for production, `main` for stable, `develop` for development work
 
 ## MCP Integration
 - **Laravel Boost MCP Server**: Configured in `.mcp.json` with `php artisan boost:mcp`
