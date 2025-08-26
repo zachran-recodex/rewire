@@ -8,15 +8,15 @@ Zero downtime deployment means updating your app without users noticing any inte
 
 ```bash
 # Create user with proper primary group
-sudo adduser deployer --ingroup www-data
-sudo usermod -aG sudo deployer
+sudo adduser username --ingroup www-data
+sudo usermod -aG sudo username
 
 # Secure sudo access
-echo "deployer ALL=(ALL:ALL) ALL" | sudo tee /etc/sudoers.d/deployer
-echo 'Defaults:deployer !requiretty' | sudo tee -a /etc/sudoers.d/deployer
+echo "username ALL=(ALL:ALL) ALL" | sudo tee /etc/sudoers.d/username
+echo 'Defaults:username !requiretty' | sudo tee -a /etc/sudoers.d/username
 
 # Fix home directory permissions
-sudo chmod 711 /home/deployer
+sudo chmod 711 /home/username
 ```
 
 ## 1. Initial Server Setup
@@ -25,8 +25,8 @@ sudo chmod 711 /home/deployer
 # Update the system
 apt update
 sudo apt install -y nginx php-fpm mariadb-server ufw fail2ban acl
-sudo apt install -y php8.3-{cli,common,curl,xml,mbstring,zip,mysql,gd,intl,bcmath,redis,imagick,opcache,tokenizer,dom,fileinfo}
-sudo systemctl restart php8.3-fpm
+sudo apt install -y php8.4-{cli,common,curl,xml,mbstring,zip,mysql,gd,intl,bcmath,redis,imagick,opcache,tokenizer,dom,fileinfo}
+sudo systemctl restart php8.4-fpm
 ```
 
 ## 2. Configure Nginx
@@ -40,86 +40,100 @@ sudo nano /etc/nginx/sites-available/laravel
 Add the following configuration:
 
 ```nginx
-server {
-    listen 80;
-    listen [::]:80;
-    server_name your-domain.com;
-    root /home/deployer/laravel/your-domain.com/public;
+server {                                                                                                                                                         
+     server_name yourdomain.com www.yourdomain.com;
+     root /home/username/yourdomain.com/current/public;
 
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-    add_header X-XSS-Protection "1; mode=block";
-    add_header Referrer-Policy "strict-origin-when-cross-origin";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header Permissions-Policy "geolocation=(), midi=(), sync-xhr=(), microphone=(), camera=(), magnetometer=(), gyroscope=(), fullscreen=(self), payment=()";
-    server_tokens off;
+     add_header X-Frame-Options "SAMEORIGIN";
+     add_header X-Content-Type-Options "nosniff";
+     add_header X-XSS-Protection "1; mode=block";
+     add_header Referrer-Policy "strict-origin-when-cross-origin";
+     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+     add_header Permissions-Policy "geolocation=(), midi=(), sync-xhr=(), microphone=(), camera=(), magnetometer=(), gyroscope=(), fullscreen=(self), payment=()";
+     server_tokens off;
 
-    index index.php;
-    charset utf-8;
+     index index.php;
+     charset utf-8;
 
-    sendfile on;
-    tcp_nopush on;
-    tcp_nodelay on;
-    keepalive_timeout 65;
-    client_max_body_size 100M;
+     sendfile on;
+     tcp_nopush on;
+     tcp_nodelay on;
+     keepalive_timeout 65;
+     client_max_body_size 100M;
 
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot|webp)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        access_log off;
-        log_not_found off;
-        try_files $uri =404;
-    }
+     # Exact matches for Flux assets - highest priority
+     location = /flux/flux.js {
+         expires off;
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
+     location = /flux/flux.min.js {
+         expires off;
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
+     location = /flux/flux.css {
+         expires off;
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    error_page 404 /index.php;
+     # Exact matches for Livewire assets - highest priority
+     location = /livewire/livewire.js {
+         expires off;
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    location ~ ^/index\.php(/|$) {
-        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-        
-        fastcgi_buffer_size 128k;
-        fastcgi_buffers 4 256k;
-        fastcgi_busy_buffers_size 256k;
-        fastcgi_read_timeout 300;
-        
-        fastcgi_hide_header X-Powered-By;
-    }
+     location = /livewire/livewire.min.js {
+         expires off;
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    location ~ /\.(?!well-known).* {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
+     # Static assets caching
+     location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot|webp)$ {
+         expires 1y;
+         add_header Cache-Control "public, immutable";
+         access_log off;
+         log_not_found off;
+         try_files $uri =404;
+     }
 
-    gzip on;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
-    gzip_min_length 1024;
-    gzip_buffers 16 8k;
-    gzip_disable "MSIE [1-6]\.";
+     location / {
+         try_files $uri $uri/ /index.php?$query_string;
+     }
 
-    # Flux assets configuration
-    location ~ ^/flux/flux(\.min)?\.(js|css)$ {
-        expires off;
-        try_files $uri $uri/ /index.php?$query_string;
-    }
+     location = /favicon.ico { access_log off; log_not_found off; }
+     location = /robots.txt  { access_log off; log_not_found off; }
 
-    # Livewire assets configuration
-    location ~ ^/livewire/livewire\.(js|min\.js)$ {
-        expires off;
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-}
+     error_page 404 /index.php;
+
+     location ~ ^/index\.php(/|$) {
+         fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
+         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+         include fastcgi_params;
+
+         fastcgi_buffer_size 128k;
+         fastcgi_buffers 4 256k;
+         fastcgi_busy_buffers_size 256k;
+         fastcgi_read_timeout 300;
+
+         fastcgi_hide_header X-Powered-By;
+     }
+
+     location ~ /\.(?!well-known).* {
+         deny all;
+         access_log off;
+         log_not_found off;
+     }
+
+     gzip on;
+     gzip_vary on;
+     gzip_proxied any;
+     gzip_comp_level 6;
+     gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
+     gzip_min_length 1024;
+     gzip_buffers 16 8k;
+     gzip_disable "MSIE [1-6]\.";
+ }
 ```
 
 Enable the site:
@@ -133,17 +147,17 @@ sudo systemctl restart nginx
 ## 3. Update PHP-FPM Configuration
 
 ```bash
-nano /etc/php/8.3/fpm/pool.d/www.conf
+nano /etc/php/8.4/fpm/pool.d/www.conf
 ```
 
 Replace it with the following configuration and restart PHP-FPM:
 
 ```ini
 [www]
-user = deployer
+user = username
 group = www-data
 
-listen = /var/run/php/php8.3-fpm.sock
+listen = /var/run/php/php8.4-fpm.sock
 listen.owner = www-data
 listen.group = www-data
 listen.mode = 0660
@@ -156,7 +170,8 @@ pm.max_spare_servers = 6
 pm.process_idle_timeout = 10s
 pm.max_requests = 500
 
-php_admin_value[open_basedir] = /home/deployer/laravel/current/:/home/deployer/laravel/releases/:/home/deployer/laravel/shared/:/tmp/:/var/lib/php/sessions/
+php_admin_value[open_basedir] = /home/username/laravel/current/:/home/username/laravel/releases/:/home/username/laravel/shared/:/tmp/:/var/lib/php/sessions/
+php_admin_value[open_basedir] = /home/username/laravel/current/:/home/username/laravel/releases/:/home/username/laravel/shared/:/tmp/:/var/lib/php/sessions/
 php_admin_value[disable_functions] = "exec,passthru,shell_exec,system,proc_open,popen"
 php_admin_flag[expose_php] = off
 php_admin_value[memory_limit] = 256M
@@ -170,7 +185,7 @@ php_admin_value[opcache.memory_consumption] = 128
 ## 4. Update PHP Configuration
 
 ```bash
-nano /etc/php/8.3/fpm/php.ini
+nano /etc/php/8.4/fpm/php.ini
 ```
 
 Replace it with the following configuration:
@@ -185,7 +200,7 @@ error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT
 display_errors = Off
 display_startup_errors = Off
 log_errors = On
-error_log = /var/log/php8.3-fpm.log
+error_log = /var/log/php8.4-fpm.log
 
 opcache.enable=1
 opcache.memory_consumption=256
@@ -221,20 +236,20 @@ date.timezone = Europe/Warsaw
 
 ```bash
 # Create structure with proper permissions
-sudo mkdir -p /home/deployer/laravel/{releases,shared}
-sudo chown -R deployer:www-data /home/deployer/laravel
-sudo chmod -R 2775 /home/deployer/laravel
+sudo mkdir -p /home/username/laravel/{releases,shared}
+sudo chown -R username:www-data /home/username/laravel
+sudo chmod -R 2775 /home/username/laravel
 
 # Shared folders setup
-sudo mkdir -p /home/deployer/laravel/shared/storage/{app,framework,logs}
-sudo mkdir -p /home/deployer/laravel/shared/storage/framework/{cache,sessions,views}
-sudo chmod -R 775 /home/deployer/laravel/shared
+sudo mkdir -p /home/username/laravel/shared/storage/{app,framework,logs}
+sudo mkdir -p /home/username/laravel/shared/storage/framework/{cache,sessions,views}
+sudo chmod -R 775 /home/username/laravel/shared
 
 # Set ACL for future files
-sudo setfacl -Rdm g:www-data:rwx /home/deployer/laravel
+sudo setfacl -Rdm g:www-data:rwx /home/username/laravel
 ```
 
-## 6. Set Up SSH Key for GitHub Actions (as deployer user)
+## 6. Set Up SSH Key for GitHub Actions (as username user)
 
 ```bash
 # Create SSH directory
@@ -300,7 +315,7 @@ In main directory create script `deploy.sh`:
 set -e
 set -o pipefail
 
-APP_USER="deployer"
+APP_USER="username"
 APP_GROUP="www-data"
 APP_BASE="/home/$APP_USER/laravel"
 RELEASES_DIR="$APP_BASE/releases"
@@ -381,7 +396,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+    
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -389,20 +404,20 @@ jobs:
           extensions: mbstring, dom, fileinfo, mysql, zip, gd, intl, redis, imagick
           coverage: xdebug
           tools: composer:v2
-
+    
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
-
+    
       - name: Copy .env.testing
         run: cp .env.testing .env
-
+    
       - name: Get Composer cache directory
         id: composer-cache
         run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
+    
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
@@ -411,24 +426,25 @@ jobs:
             ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
-
+    
+      - name: Add Flux Credentials
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+    
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress
-
+    
+      - name: Generate Application Key
+        run: php artisan key:generate
+    
       - name: Install NPM dependencies
         run: npm ci
-
+    
       - name: Build assets
         run: npm run build
-
+    
       - name: Run code quality checks
-        run: |
-          composer larastan
-          composer pint
-          npm run format
-          npm run types
-          npm run lint
-
+        run: vendor/bin/pint
+    
       - name: Run tests (with Pest)
         env:
           DB_CONNECTION: mysql
@@ -441,7 +457,7 @@ jobs:
           REDIS_PORT: 6379
           SESSION_DRIVER: array
         run: ./vendor/bin/pest
-
+    
   build:
     name: 🏗️ Build Release
     needs: test
@@ -449,28 +465,31 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install NPM dependencies
-        run: npm ci
-
-      - name: Build assets
-        run: npm run build
-
+    
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
           extensions: mbstring, dom, fileinfo, mysql, zip, gd, intl, redis, imagick
           tools: composer:v2
-
+    
+      - name: Add Flux Credentials
+        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+    
       - name: Install Composer dependencies
         run: composer install --no-dev --prefer-dist --no-interaction --no-progress
+    
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+    
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
 
       - name: Create release archive
         run: |
@@ -486,46 +505,48 @@ jobs:
         with:
           name: release
           path: release.tar.gz
-
+    
   deploy:
     name: 🚀 Deploy to Server
     needs: build
     runs-on: ubuntu-latest
+    env:
+      APP_NAME: ${{ vars.APP_NAME }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+    
       - name: Setup SSH Key
         uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
-
+    
       - name: Setup known_hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
+    
       - name: Download release artifact
         uses: actions/download-artifact@v4
         with:
           name: release
           path: .
-
+    
       - name: Create .env file from GitHub Variables
         run: |
           echo "${{ vars.ENV_FILE }}" > .env
-
+    
       - name: Upload release to server
         run: |
-          scp -vvv -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/
-
+          scp -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/
+    
       - name: Upload .env file to shared directory
         run: |
-          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/laravel/shared/.env
-
+          scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/shared/.env
+    
       - name: Run deploy script on server
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s' < ./deploy.sh
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s ${{ env.APP_NAME }}' < ./deploy.sh
 ```
 
 ## 10. Final Steps
@@ -542,7 +563,7 @@ jobs:
 
 - **Permission Issues**: Ensure all directories have the correct ownership and permissions.
 - **Nginx Errors**: Check the Nginx error logs with `sudo tail -f /var/log/nginx/error.log`.
-- **PHP-FPM Errors**: Check the PHP-FPM error logs with `sudo tail -f /var/log/php8.3-fpm.log`.
+- **PHP-FPM Errors**: Check the PHP-FPM error logs with `sudo tail -f /var/log/php8.4-fpm.log`.
 - **Deployment Failures**: Check the GitHub Actions logs for detailed error messages.
 
 ## Conclusion
