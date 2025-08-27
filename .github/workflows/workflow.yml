@@ -177,12 +177,19 @@ jobs:
       - name: Check if .env.production changed
         id: env-changed
         run: |
-          if git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep -q "^\.env\.production$"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "📝 .env.production file has changes, will upload to server"
+          # Check if we can do a proper diff (not first push or force push)
+          if git rev-parse --verify ${{ github.event.before }} >/dev/null 2>&1; then
+            if git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep -q "^\.env\.production$"; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "📝 .env.production file has changes, will upload to server"
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "ℹ️ No changes in .env.production, skipping upload"
+            fi
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No changes in .env.production, skipping upload"
+            # First push or force push - upload .env file to be safe
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Cannot determine .env changes (first push?), uploading .env file"
           fi
 
       - name: Copy .env.production file (if changed)
