@@ -5,6 +5,12 @@ on:
     branches:
       - deploy
 
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '22'
+  MYSQL_VERSION: '8.0'
+  APP_NAME: hmtitelkomuniversity.com
+
 jobs:
   test:
     name: 🧪 Test & Lint
@@ -21,7 +27,7 @@ jobs:
           --health-cmd="mysqladmin ping --silent"
           --health-interval=5s
           --health-timeout=2s
-          --health-retries=2
+          --health-retries=3
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,7 +35,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, dom, fileinfo, mysql, zip, gd, intl, redis, imagick
           coverage: xdebug
           tools: composer:v2
@@ -37,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Copy .env.testing
@@ -98,9 +104,16 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ env.PHP_VERSION }}
           extensions: mbstring, dom, fileinfo, mysql, zip, gd, intl, redis, imagick
           tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-build-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-build-
 
       - name: Add Flux Credentials
         run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
@@ -111,7 +124,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install NPM dependencies
@@ -140,7 +153,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      APP_NAME: ${{ vars.APP_NAME }}
+      APP_NAME: hmtitelkomuniversity.com
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -161,18 +174,58 @@ jobs:
           name: release
           path: .
 
-      - name: Create .env file from GitHub Variables
+      - name: Check if .env.production changed
+        id: env-changed
         run: |
-          echo "${{ vars.ENV_FILE }}" > .env
+          if git diff --name-only ${{ github.event.before }}..${{ github.sha }} | grep -q "^\.env\.production$"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 .env.production file has changes, will upload to server"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changes in .env.production, skipping upload"
+          fi
+
+      - name: Copy .env.production file (if changed)
+        if: steps.env-changed.outputs.changed == 'true'
+        run: |
+          cp .env.production .env
 
       - name: Upload release to server
         run: |
           scp -P ${{ secrets.SSH_PORT }} release.tar.gz ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/
 
-      - name: Upload .env file to shared directory
+      - name: Upload .env file to shared directory (if changed)
+        if: steps.env-changed.outputs.changed == 'true'
         run: |
           scp -P ${{ secrets.SSH_PORT }} .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/${{ env.APP_NAME }}/shared/.env
 
       - name: Run deploy script on server
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -s ${{ env.APP_NAME }}' < ./deploy.sh
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          sleep 30
+          if curl -f -s --max-time 30 "https://${{ env.APP_NAME }}/up"; then
+            echo "✅ Health check passed - deployment successful!"
+          else
+            echo "❌ Health check failed - deployment may have issues"
+            exit 1
+          fi
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "🌐 Application: https://${{ env.APP_NAME }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Author: ${{ github.actor }}"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "💥 Deployment failed!"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Author: ${{ github.actor }}"
+          echo "🔍 Check the logs above for details"

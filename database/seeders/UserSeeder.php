@@ -17,9 +17,9 @@ class UserSeeder extends Seeder
         if (app()->environment('local', 'testing')) {
             // Create Super Admin user (only for local/testing)
             $superAdmin = User::create([
-                'name' => 'Zachran Razendra',
-                'username' => 'zachranraze',
-                'email' => 'zachranraze@recodex.id',
+                'name' => 'Super Admin',
+                'username' => 'superadmin',
+                'email' => 'superadmin@example.com',
                 'password' => Hash::make('admin123'),
                 'bio' => 'Super Administrator of Rewire',
                 'location' => 'Indonesia',
@@ -49,16 +49,24 @@ class UserSeeder extends Seeder
             ]);
             $user->assignRole('user');
         } else {
-            // Production: Create only super admin with secure defaults
-            $superAdmin = User::create([
-                'name' => env('ADMIN_NAME', 'Administrator'),
-                'username' => env('ADMIN_USERNAME', 'admin'),
-                'email' => env('ADMIN_EMAIL', 'admin@rewire.web.id'),
-                'password' => Hash::make(env('ADMIN_PASSWORD', str()->random(32))),
-                'bio' => 'System Administrator',
-                'is_active' => true,
-            ]);
-            $superAdmin->assignRole('super-admin');
+            // Production: Create only super admin with secure defaults if not exists
+            $superAdmin = User::firstOrCreate(
+                [
+                    'email' => env('ADMIN_EMAIL', 'superadmin@example.com'),
+                ],
+                [
+                    'name' => env('ADMIN_NAME', 'Super Admin'),
+                    'username' => env('ADMIN_USERNAME', 'superadmin'),
+                    'password' => Hash::make(env('ADMIN_PASSWORD', str()->random(32))),
+                    'bio' => 'System Administrator',
+                    'is_active' => true,
+                ]
+            );
+
+            // Ensure user has super-admin role
+            if (!$superAdmin->hasRole('super-admin')) {
+                $superAdmin->assignRole('super-admin');
+            }
         }
     }
 }
