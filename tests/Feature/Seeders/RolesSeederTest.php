@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Database\Seeders\RolesSeeder;
+use Database\Seeders\RoleSeeder;
 use Spatie\Permission\Models\Role;
 
 test('roles seeder creates all required roles', function () {
@@ -10,7 +10,7 @@ test('roles seeder creates all required roles', function () {
     Role::query()->delete();
 
     // Run the seeder
-    $this->artisan('db:seed', ['--class' => RolesSeeder::class])
+    $this->artisan('db:seed', ['--class' => RoleSeeder::class])
         ->assertExitCode(0);
 
     // Verify all roles were created
@@ -26,12 +26,12 @@ test('roles seeder creates all required roles', function () {
 
 test('roles seeder is idempotent', function () {
     // Ensure roles exist first
-    $this->artisan('db:seed', ['--class' => RolesSeeder::class]);
+    $this->artisan('db:seed', ['--class' => RoleSeeder::class]);
 
     $initialCount = Role::count();
 
     // Run seeder again
-    $this->artisan('db:seed', ['--class' => RolesSeeder::class])
+    $this->artisan('db:seed', ['--class' => RoleSeeder::class])
         ->assertExitCode(0);
 
     // Verify no duplicate roles were created
@@ -51,7 +51,7 @@ test('roles seeder handles partial existing roles', function () {
     Role::create(['name' => 'admin', 'guard_name' => 'web']);
 
     // Run the seeder
-    $this->artisan('db:seed', ['--class' => RolesSeeder::class])
+    $this->artisan('db:seed', ['--class' => RoleSeeder::class])
         ->assertExitCode(0);
 
     // Verify all roles now exist

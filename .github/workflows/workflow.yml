@@ -9,7 +9,7 @@ env:
   PHP_VERSION: '8.4'
   NODE_VERSION: '22'
   MYSQL_VERSION: '8.0'
-  APP_NAME: hmtitelkomuniversity.com
+  APP_NAME: rewire.web.id
 
 jobs:
   test:
@@ -153,7 +153,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      APP_NAME: hmtitelkomuniversity.com
+      APP_NAME: rewire.web.id
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
