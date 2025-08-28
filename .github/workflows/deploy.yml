@@ -36,8 +36,16 @@ jobs:
       - name: Add Flux Credentials
         run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
 
-      - name: Install Dependencies
-        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+      - name: Self-update Composer
+        run: composer self-update
+
+      - name: Install Dependencies (with retry logic)
+        run: |
+          for i in 1 2 3; do
+            composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader && break
+            echo "Composer failed, retrying in 5 seconds..."
+            sleep 5
+          done
 
       - name: Install Node Dependencies
         run: npm ci
@@ -110,8 +118,12 @@ jobs:
               php artisan key:generate --force
             fi
 
-            # Install/update composer dependencies (production only)
-            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            # Install/update composer dependencies (production only) with retry logic
+            for i in 1 2 3; do
+              composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader && break
+              echo "Composer failed, retrying in 5 seconds..."
+              sleep 5
+            done
 
             # Clear and optimize Laravel caches
             php artisan config:clear
