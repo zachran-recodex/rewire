@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,9 +43,6 @@ jobs:
       - name: Build assets
         run: npm run build
 
-      - name: Run post-install scripts if needed
-        run: composer run-script post-install-cmd --no-interaction || true
-
       - name: Clean before archive
         run: |
           # Remove any temporary files that might cause tar issues
@@ -72,6 +69,7 @@ jobs:
             --exclude='*.tmp' \
             --exclude='.DS_Store' \
             --exclude='deployment.tar.gz' \
+            --warning=no-file-changed \
             -czf deployment.tar.gz .
 
       - name: Deploy to server
@@ -87,14 +85,14 @@ jobs:
             if [ -d "/var/www/rewire.web.id/current" ]; then
               sudo cp -r /var/www/rewire.web.id/current /var/www/rewire.web.id/backup-$(date +%Y%m%d-%H%M%S)
             fi
-            
+
             # Create releases directory
             sudo mkdir -p /var/www/rewire.web.id/releases
-            
+
             # Create new release directory
             RELEASE_DIR="/var/www/rewire.web.id/releases/$(date +%Y%m%d-%H%M%S)"
             sudo mkdir -p $RELEASE_DIR
-            
+
             # Set ownership
             sudo chown -R zachranraze:zachranraze /var/www/rewire.web.id/
 
@@ -122,75 +120,75 @@ jobs:
             cd $RELEASE_DIR
             sudo tar -xzf /tmp/deployment.tar.gz
             sudo rm /tmp/deployment.tar.gz
-            
+
             # Copy environment file
             if [ -f "/var/www/rewire.web.id/shared/.env" ]; then
               sudo cp /var/www/rewire.web.id/shared/.env $RELEASE_DIR/.env
             else
               echo "Warning: .env file not found in shared directory"
             fi
-            
+
             # Create shared directories if they don't exist
             sudo mkdir -p /var/www/rewire.web.id/shared/storage/app
             sudo mkdir -p /var/www/rewire.web.id/shared/storage/logs
             sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/cache
             sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/sessions
             sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/views
-            
+
             # Link shared directories
             sudo rm -rf $RELEASE_DIR/storage/app
             sudo rm -rf $RELEASE_DIR/storage/logs
             sudo rm -rf $RELEASE_DIR/storage/framework/cache
-            sudo rm -rf $RELEASE_DIR/storage/framework/sessions  
+            sudo rm -rf $RELEASE_DIR/storage/framework/sessions
             sudo rm -rf $RELEASE_DIR/storage/framework/views
-            
+
             sudo ln -s /var/www/rewire.web.id/shared/storage/app $RELEASE_DIR/storage/app
             sudo ln -s /var/www/rewire.web.id/shared/storage/logs $RELEASE_DIR/storage/logs
             sudo ln -s /var/www/rewire.web.id/shared/storage/framework/cache $RELEASE_DIR/storage/framework/cache
             sudo ln -s /var/www/rewire.web.id/shared/storage/framework/sessions $RELEASE_DIR/storage/framework/sessions
             sudo ln -s /var/www/rewire.web.id/shared/storage/framework/views $RELEASE_DIR/storage/framework/views
-            
+
             # Set proper permissions
             sudo chown -R zachranraze:www-data /var/www/rewire.web.id/
             sudo chmod -R 755 $RELEASE_DIR
             sudo chmod -R 775 $RELEASE_DIR/storage
             sudo chmod -R 775 $RELEASE_DIR/bootstrap/cache
-            
+
             # Run Laravel deployment commands
             cd $RELEASE_DIR
-            
+
             # Install/update composer dependencies in production
             sudo -u zachranraze composer install --optimize-autoloader --no-dev --no-interaction
-            
+
             # Clear and cache config
             sudo -u zachranraze php artisan config:clear
             sudo -u zachranraze php artisan config:cache
-            
+
             # Clear and cache routes
             sudo -u zachranraze php artisan route:clear
             sudo -u zachranraze php artisan route:cache
-            
+
             # Clear and cache views
             sudo -u zachranraze php artisan view:clear
             sudo -u zachranraze php artisan view:cache
-            
+
             # Run database migrations
             sudo -u zachranraze php artisan migrate --force
-            
+
             # Clear application cache
             sudo -u zachranraze php artisan cache:clear
-            
+
             # Queue restart (if using queues)
             sudo -u zachranraze php artisan queue:restart || true
-            
+
             # Update current symlink
             sudo rm -f /var/www/rewire.web.id/current
             sudo ln -s $RELEASE_DIR /var/www/rewire.web.id/current
-            
+
             # Clean up old releases (keep last 3)
             cd /var/www/rewire.web.id/releases
             sudo ls -t | tail -n +4 | sudo xargs rm -rf
-            
+
             echo "Deployment completed successfully!"
             echo "New release: $RELEASE_DIR"
             echo "Current symlink updated to: /var/www/rewire.web.id/current"
