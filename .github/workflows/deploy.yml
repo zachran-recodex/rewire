@@ -39,11 +39,15 @@ jobs:
       - name: Self-update Composer
         run: composer self-update
 
+      - name: Clear Composer cache
+        run: composer clear-cache
+
       - name: Install Dependencies (with retry logic)
         run: |
           for i in 1 2 3; do
-            composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader && break
+            composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-scripts && break
             echo "Composer failed, retrying in 5 seconds..."
+            rm -rf vendor/ composer.lock
             sleep 5
           done
 
@@ -120,8 +124,9 @@ jobs:
 
             # Install/update composer dependencies (production only) with retry logic
             for i in 1 2 3; do
-              composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader && break
+              composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader --no-scripts && break
               echo "Composer failed, retrying in 5 seconds..."
+              rm -rf vendor/ composer.lock
               sleep 5
             done
 
