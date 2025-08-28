@@ -1,10 +1,7 @@
 name: tests
 
 on:
-  workflow_run:
-    workflows: ["lint"]
-    types:
-      - completed
+  push:
     branches:
       - master
   pull_request:
@@ -15,7 +12,6 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     environment: Testing
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' }}
 
     steps:
       - name: Checkout
@@ -24,14 +20,14 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.4
           tools: composer:v2
           coverage: xdebug
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Node Dependencies
