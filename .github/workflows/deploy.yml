@@ -28,8 +28,14 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Ensure clean working directory
+        run: git clean -fdx
+
       - name: Install Composer dependencies
-        run: composer install --optimize-autoloader --no-dev --no-interaction
+        run: composer install --optimize-autoloader --no-dev --no-interaction --no-scripts --prefer-dist
+        env:
+          COMPOSER_NO_AUDIT: 1
+          COMPOSER_NO_INTERACTION: 1
 
       - name: Install NPM dependencies
         run: npm ci
@@ -37,19 +43,36 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      - name: Run post-install scripts if needed
+        run: composer run-script post-install-cmd --no-interaction || true
+
+      - name: Clean before archive
+        run: |
+          # Remove any temporary files that might cause tar issues
+          find . -name "*.tmp" -delete || true
+          find . -name ".DS_Store" -delete || true
+          # Clear any cache files that might change
+          rm -rf storage/framework/cache/* || true
+          rm -rf storage/framework/sessions/* || true
+          rm -rf storage/framework/views/* || true
+          rm -rf storage/logs/* || true
+
       - name: Create deployment archive
         run: |
-          tar -czf deployment.tar.gz \
+          tar --exclude-vcs \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='node_modules' \
             --exclude='tests' \
             --exclude='.env*' \
-            --exclude='storage/logs/*' \
-            --exclude='storage/framework/cache/*' \
-            --exclude='storage/framework/sessions/*' \
-            --exclude='storage/framework/views/*' \
-            .
+            --exclude='storage/logs' \
+            --exclude='storage/framework/cache' \
+            --exclude='storage/framework/sessions' \
+            --exclude='storage/framework/views' \
+            --exclude='*.tmp' \
+            --exclude='.DS_Store' \
+            --exclude='deployment.tar.gz' \
+            -czf deployment.tar.gz .
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
