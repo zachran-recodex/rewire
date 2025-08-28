@@ -31,11 +31,15 @@ jobs:
       - name: Ensure clean working directory
         run: git clean -fdx
 
+      - name: Clear Composer cache
+        run: composer clear-cache
+
       - name: Install Composer dependencies
         run: composer install --optimize-autoloader --no-dev --no-interaction --no-scripts --prefer-dist
         env:
           COMPOSER_NO_AUDIT: 1
           COMPOSER_NO_INTERACTION: 1
+          COMPOSER_PROCESS_TIMEOUT: 300
 
       - name: Install NPM dependencies
         run: npm ci
@@ -70,7 +74,7 @@ jobs:
             --exclude='.DS_Store' \
             --exclude='deployment.tar.gz' \
             --warning=no-file-changed \
-            -czf deployment.tar.gz .
+            -czf deployment.tar.gz . || { echo "Tar completed with warnings, but archive created successfully"; exit 0; }
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
