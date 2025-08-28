@@ -37,18 +37,21 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
+            Please review this Laravel pull request and provide feedback on:
+            - Laravel best practices and conventions
+            - Livewire component structure and usage
+            - Code quality and security concerns
+            - Database schema changes and migrations
+            - Test coverage with Pest framework
+            - Flux UI component usage
             - Performance considerations
-            - Security concerns
-            - Test coverage
             
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
+            Use the repository's CLAUDE.md for guidance on Laravel 12, Livewire 3, and project-specific conventions. 
+            Focus on Laravel ecosystem best practices and be constructive in your feedback.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
           
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.anthropic.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Bash(php artisan:*),Bash(composer:*),Bash(vendor/bin/pest:*),Bash(vendor/bin/pint:*),Bash(npm:*),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
