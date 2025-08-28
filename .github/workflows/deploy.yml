@@ -1,98 +1,186 @@
-name: deploy
+name: Deploy to Production
 
 on:
   push:
     branches:
-      - deploy
-  workflow_dispatch: # Allow manual deployment
+      - production
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Production
-
+    
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.SERVER_SSH_KEY }}
+          fetch-depth: 0
 
-      - name: Add server to known hosts
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, pdo_mysql, zip
+          coverage: none
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        run: composer install --optimize-autoloader --no-dev --no-interaction
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Create deployment archive
         run: |
-          ssh-keyscan -H 103.197.191.32 >> ~/.ssh/known_hosts
+          tar -czf deployment.tar.gz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='.env*' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/cache/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            .
 
-      - name: Deploy to VPS
-        run: |
-          ssh zachranraze@103.197.191.32 << 'EOF'
-            set -e
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 103.197.191.32
+          username: zachranraze
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            # Create backup of current deployment
+            if [ -d "/var/www/rewire.web.id/current" ]; then
+              sudo cp -r /var/www/rewire.web.id/current /var/www/rewire.web.id/backup-$(date +%Y%m%d-%H%M%S)
+            fi
+            
+            # Create releases directory
+            sudo mkdir -p /var/www/rewire.web.id/releases
+            
+            # Create new release directory
+            RELEASE_DIR="/var/www/rewire.web.id/releases/$(date +%Y%m%d-%H%M%S)"
+            sudo mkdir -p $RELEASE_DIR
+            
+            # Set ownership
+            sudo chown -R zachranraze:zachranraze /var/www/rewire.web.id/
 
-            # Navigate to web directory
-            cd /var/www/rewire.web.id
+      - name: Upload and extract files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 103.197.191.32
+          username: zachranraze
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: "deployment.tar.gz"
+          target: "/tmp/"
 
-            # Pull latest changes
-            git pull origin deploy
-
-            # Set proper permissions for git
-            sudo chown -R zachranraze:zachranraze .
-
-            # Install/update composer dependencies
-            composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
-
-            # Install/update npm dependencies
-            npm ci --only=production
-
-            # Build production assets
-            npm run build
-
-            # Clear and cache Laravel configurations
-            php artisan config:clear
-            php artisan config:cache
-            php artisan route:clear
-            php artisan route:cache
-            php artisan view:clear
-            php artisan view:cache
-
-            # Run database migrations (if needed)
-            php artisan migrate --force
-
+      - name: Complete deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 103.197.191.32
+          username: zachranraze
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            # Extract files to release directory
+            RELEASE_DIR="/var/www/rewire.web.id/releases/$(date +%Y%m%d-%H%M%S)"
+            cd $RELEASE_DIR
+            sudo tar -xzf /tmp/deployment.tar.gz
+            sudo rm /tmp/deployment.tar.gz
+            
+            # Copy environment file
+            if [ -f "/var/www/rewire.web.id/shared/.env" ]; then
+              sudo cp /var/www/rewire.web.id/shared/.env $RELEASE_DIR/.env
+            else
+              echo "Warning: .env file not found in shared directory"
+            fi
+            
+            # Create shared directories if they don't exist
+            sudo mkdir -p /var/www/rewire.web.id/shared/storage/app
+            sudo mkdir -p /var/www/rewire.web.id/shared/storage/logs
+            sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/cache
+            sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/sessions
+            sudo mkdir -p /var/www/rewire.web.id/shared/storage/framework/views
+            
+            # Link shared directories
+            sudo rm -rf $RELEASE_DIR/storage/app
+            sudo rm -rf $RELEASE_DIR/storage/logs
+            sudo rm -rf $RELEASE_DIR/storage/framework/cache
+            sudo rm -rf $RELEASE_DIR/storage/framework/sessions  
+            sudo rm -rf $RELEASE_DIR/storage/framework/views
+            
+            sudo ln -s /var/www/rewire.web.id/shared/storage/app $RELEASE_DIR/storage/app
+            sudo ln -s /var/www/rewire.web.id/shared/storage/logs $RELEASE_DIR/storage/logs
+            sudo ln -s /var/www/rewire.web.id/shared/storage/framework/cache $RELEASE_DIR/storage/framework/cache
+            sudo ln -s /var/www/rewire.web.id/shared/storage/framework/sessions $RELEASE_DIR/storage/framework/sessions
+            sudo ln -s /var/www/rewire.web.id/shared/storage/framework/views $RELEASE_DIR/storage/framework/views
+            
+            # Set proper permissions
+            sudo chown -R zachranraze:www-data /var/www/rewire.web.id/
+            sudo chmod -R 755 $RELEASE_DIR
+            sudo chmod -R 775 $RELEASE_DIR/storage
+            sudo chmod -R 775 $RELEASE_DIR/bootstrap/cache
+            
+            # Run Laravel deployment commands
+            cd $RELEASE_DIR
+            
+            # Install/update composer dependencies in production
+            sudo -u zachranraze composer install --optimize-autoloader --no-dev --no-interaction
+            
+            # Clear and cache config
+            sudo -u zachranraze php artisan config:clear
+            sudo -u zachranraze php artisan config:cache
+            
+            # Clear and cache routes
+            sudo -u zachranraze php artisan route:clear
+            sudo -u zachranraze php artisan route:cache
+            
+            # Clear and cache views
+            sudo -u zachranraze php artisan view:clear
+            sudo -u zachranraze php artisan view:cache
+            
+            # Run database migrations
+            sudo -u zachranraze php artisan migrate --force
+            
             # Clear application cache
-            php artisan cache:clear
-
-            # Set proper ownership and permissions
-            sudo chown -R www-data:www-data /var/www/rewire.web.id
-            sudo chmod -R 755 /var/www/rewire.web.id
-            sudo chmod -R 775 /var/www/rewire.web.id/storage
-            sudo chmod -R 775 /var/www/rewire.web.id/bootstrap/cache
-
-            # Restart services
-            sudo systemctl reload nginx
-            sudo systemctl restart php8.2-fpm
-
+            sudo -u zachranraze php artisan cache:clear
+            
+            # Queue restart (if using queues)
+            sudo -u zachranraze php artisan queue:restart || true
+            
+            # Update current symlink
+            sudo rm -f /var/www/rewire.web.id/current
+            sudo ln -s $RELEASE_DIR /var/www/rewire.web.id/current
+            
+            # Clean up old releases (keep last 3)
+            cd /var/www/rewire.web.id/releases
+            sudo ls -t | tail -n +4 | sudo xargs rm -rf
+            
             echo "Deployment completed successfully!"
-          EOF
+            echo "New release: $RELEASE_DIR"
+            echo "Current symlink updated to: /var/www/rewire.web.id/current"
 
-      - name: Health Check
-        run: |
-          # Wait a moment for services to fully restart
-          sleep 10
-
-          # Check if the website is responding
-          if curl -f -s --max-time 30 https://rewire.web.id > /dev/null; then
-            echo "✅ Website is accessible and responding"
-          else
-            echo "❌ Website health check failed"
-            exit 1
-          fi
-
-      - name: Notify Deployment Status
-        if: always()
-        run: |
-          if [ ${{ job.status }} == 'success' ]; then
-            echo "🚀 Deployment to production completed successfully!"
-          else
-            echo "💥 Deployment failed. Please check the logs."
-            exit 1
-          fi
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 103.197.191.32
+          username: zachranraze
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Check if application is responding
+            cd /var/www/rewire.web.id/current
+            sudo -u zachranraze php artisan --version
+            echo "Laravel application is running successfully!"
